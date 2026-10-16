@@ -1,4 +1,6 @@
-# Publishes packages/pet to GitHub Packages (npm.pkg.github.com) when a v* tag is pushed.
+# Publishes packages/pet when a v* tag is pushed:
+#   - to npmjs via trusted publishing (OIDC, no token; configured on npmjs.com against this file)
+#   - to GitHub Packages (npm.pkg.github.com)
 # Bump packages/pet/package.json's version, then: git tag v0.2.0 && git push origin v0.2.0
 name: Publish package
 
@@ -7,13 +9,27 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
-permissions:
-  contents: read
-  packages: write
-
 jobs:
-  publish:
+  npm:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm publish -w @markwylde/pet --access public
+
+  github:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
