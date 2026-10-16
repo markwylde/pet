@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode, type Ref } from 'react'
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type Ref } from 'react'
 import { ANIMATIONS, HIDE_LEAP, SHOW_LAND, type AnimationName, type MotionContext } from './animations'
 import { BASE_POSE, lerpPose, type Pose } from './pose'
 import { PetSvg } from './PetSvg'
@@ -20,7 +20,9 @@ const GLIDE_STOP = 90 // px/s below which a thrown pet lands
 export type Visibility = 'shown' | 'hiding' | 'hidden' | 'showing'
 
 export interface PetHandle {
-  play: (name: AnimationName, opts?: { speech?: boolean }) => void
+  /** loop: keep repeating this animation (even across drags) until another play(). */
+  play: (name: AnimationName, opts?: { speech?: boolean; loop?: boolean }) => void
+  focus: () => void
   hide: () => void
   show: () => void
   /** Move the pet by a delta, e.g. when its attachment is resized from the pet's side. */
@@ -62,6 +64,10 @@ interface Props {
   renderAttachment?: (placement: AttachmentPlacement) => ReactNode
   /** Size of the attachment while shown, so pet + attachment stay on screen together. */
   attachmentSize?: AttachmentSize | null
+  /** Where to start (top-left of the pet box); clamped to the window. */
+  initialPosition?: Point | null
+  /** Called once the pet has stopped moving somewhere new. */
+  onRest?: (pos: Point) => void
 }
 
 interface Sample {
@@ -70,7 +76,7 @@ interface Sample {
   t: number
 }
 
-interface Point {
+export interface Point {
   x: number
   y: number
 }
@@ -163,7 +169,19 @@ function nextIdle(idleFor: number, autoHide: boolean): AnimationName {
   return r < (autoHide ? 0.2 : 0.35) ? 'idle2' : 'idle1'
 }
 
-export function Pet({ ref, options, getTrayPoint, onAnimationChange, onVisibilityChange, onPetClick, renderAttachment, attachmentSize }: Props) {
+export function Pet({
+  ref,
+  options,
+  getTrayPoint,
+  onAnimationChange,
+  onVisibilityChange,
+  onPetClick,
+  renderAttachment,
+  attachmentSize,
+  initialPosition,
+  onRest,
+}: Props) {
+  const body = useRef<HTMLDivElement>(null)
   const [frame, setFrame] = useState({ pose: BASE_POSE, time: 0, x: 0, y: 0, scale: 1, opacity: 1, side: 'right' as Side['side'], align: 'bottom' as Side['align'] })
   const [visibility, setVisibility] = useState<Visibility>('shown')
   const [speech, setSpeech] = useState<string | null>(null)
@@ -181,7 +199,12 @@ export function Pet({ ref, options, getTrayPoint, onAnimationChange, onVisibilit
     home: { x: 0, y: 0 } as Point, // where to reappear after hiding
     tray: { x: 0, y: 0 } as Point, // pet position that puts its feet on the tray icon
     queued: null as AnimationName | null,
-    pos: { x: window.innerWidth / 2 - PET_W / 2, y: window.innerHeight / 2 - PET_H / 2 - 60 },
+    pos: initialPosition
+      ? clampPos(initialPosition.x, initialPosition.y, options.size)
+      : { x: window.innerWidth / 2 - (PET_W * options.size) / 2, y: window.innerHeight / 2 - (PET_H * options.size) / 2 - 60 },
+    hold: null as AnimationName | null, // animation to loop until the next play()
+    still: 0, // seconds the pet has been stationary
+    reported: null as Point | null,
     vel: { x: 0, y: 0 },
     lean: 0,
     placement: { side: 'right', align: 'bottom' } as Side,
@@ -194,10 +217,10 @@ export function Pet({ ref, options, getTrayPoint, onAnimationChange, onVisibilit
     speechTimer: 0 as number | undefined,
   })
 
-  const latest = useRef({ options, getTrayPoint, onAnimationChange, onVisibilityChange, onPetClick, attachmentSize })
+  const latest = useRef({ options, getTrayPoint, onAnimationChange, onVisibilityChange, onPetClick, attachmentSize, onRest })
   useLayoutEffect(() => {
     const opened = attachmentSize && !latest.current.attachmentSize
-    latest.current = { options, getTrayPoint, onAnimationChange, onVisibilityChange, onPetClick, attachmentSize }
+    latest.current = { options, getTrayPoint, onAnimationChange, onVisibilityChange, onPetClick, attachmentSize, onRest }
     if (opened) s.current.relayout = true
   })
 
@@ -245,6 +268,7 @@ export function Pet({ ref, options, getTrayPoint, onAnimationChange, onVisibilit
     const st = s.current
     if (st.visibility !== 'shown' || st.mode !== 'normal') return
     st.home = { ...st.pos }
+    st.hold = null
     st.tray = trayPos()
     setSpeech(null)
     setVis('hiding')
@@ -264,9 +288,10 @@ export function Pet({ ref, options, getTrayPoint, onAnimationChange, onVisibilit
   }
 
   useImperativeHandle(ref, () => ({
-    play: (name, { speech = true } = {}) => {
+    play: (name, { speech = true, loop = false } = {}) => {
       const st = s.current
       st.idleFor = 0
+      st.hold = loop ? name : null
       if (st.visibility === 'hidden') {
         st.queued = name
         show()
@@ -274,6 +299,7 @@ export function Pet({ ref, options, getTrayPoint, onAnimationChange, onVisibilit
         switchTo(name, speech)
       }
     },
+    focus: () => body.current?.focus(),
     hide,
     show,
     nudge: (dx, dy) => {
@@ -285,6 +311,7 @@ export function Pet({ ref, options, getTrayPoint, onAnimationChange, onVisibilit
   useEffect(() => {
     let raf = 0
     let prev = performance.now()
+    const frameRef = { ...s.current.pos }
 
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick)
@@ -326,7 +353,7 @@ export function Pet({ ref, options, getTrayPoint, onAnimationChange, onVisibilit
         if (Math.hypot(st.vel.x, st.vel.y) < GLIDE_STOP) {
           st.mode = 'normal'
           st.vel = { x: 0, y: 0 }
-          switchTo('idle1')
+          switchTo(st.hold ?? 'idle1')
         }
       }
 
@@ -352,6 +379,17 @@ export function Pet({ ref, options, getTrayPoint, onAnimationChange, onVisibilit
         } else {
           st.pos = target
         }
+      }
+
+      // --- report where the pet settled ---
+      const moved = Math.hypot(st.pos.x - frameRef.x, st.pos.y - frameRef.y) > 0.1
+      frameRef.x = st.pos.x
+      frameRef.y = st.pos.y
+      st.still = moved ? 0 : st.still + dt
+      const r = st.reported
+      if (st.visibility === 'shown' && st.mode === 'normal' && st.still > 0.4 && (!r || r.x !== st.pos.x || r.y !== st.pos.y)) {
+        st.reported = { ...st.pos }
+        latest.current.onRest?.(st.reported)
       }
 
       // --- hide / show transit ---
@@ -390,9 +428,10 @@ export function Pet({ ref, options, getTrayPoint, onAnimationChange, onVisibilit
           const q = st.queued
           st.queued = null
           switchTo(q ?? 'idle1', !!q)
-        } else if (st.mode !== 'normal' || opts.loop) {
+        } else if (st.mode !== 'normal' || opts.loop || st.anim === st.hold) {
           st.animTime %= def.duration
         } else {
+          st.hold = null
           switchTo(nextIdle(st.idleFor, opts.autoHide))
         }
       }
@@ -461,7 +500,29 @@ export function Pet({ ref, options, getTrayPoint, onAnimationChange, onVisibilit
       return
     }
     st.mode = Math.hypot(st.vel.x, st.vel.y) > GLIDE_STOP ? 'glide' : 'normal'
-    if (st.mode === 'normal') switchTo('idle1')
+    if (st.mode === 'normal') switchTo(st.hold ?? 'idle1')
+  }
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    const st = s.current
+    if (st.visibility !== 'shown') return
+    st.idleFor = 0
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      if (st.mode !== 'normal') return
+      const onClick = latest.current.onPetClick
+      if (onClick) onClick()
+      else switchTo(pick(['happy1', 'happy2', 'happy3'] as AnimationName[]), true)
+      return
+    }
+    const dirs: Record<string, Point> = { ArrowLeft: { x: -1, y: 0 }, ArrowRight: { x: 1, y: 0 }, ArrowUp: { x: 0, y: -1 }, ArrowDown: { x: 0, y: 1 } }
+    const d = dirs[e.key]
+    if (!d || st.mode === 'drag') return
+    e.preventDefault()
+    // a little flight in that direction; Shift goes turbo
+    const push = e.shiftKey ? 1300 : 450
+    st.mode = 'glide'
+    st.vel = { x: st.vel.x + d.x * push, y: st.vel.y + d.y * push }
   }
 
   if (visibility === 'hidden') return null
@@ -483,7 +544,18 @@ export function Pet({ ref, options, getTrayPoint, onAnimationChange, onVisibilit
         ['--pet-size' as string]: size,
       }}
     >
-      <div className="pet-body" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+      <div
+        ref={body}
+        className="pet-body"
+        role="button"
+        tabIndex={visibility === 'shown' ? 0 : -1}
+        aria-label="Pixel, your desktop assistant. Press Enter to chat, arrow keys to fly around."
+        onKeyDown={onKeyDown}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
         <PetSvg pose={frame.pose} time={frame.time} />
       </div>
       {speech && <div className="pet-speech">{speech}</div>}

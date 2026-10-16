@@ -6,14 +6,15 @@ export interface ChatMessage {
   text: string
 }
 
-export interface AssistantReply {
-  text: string
-  /** Animation the pet plays while delivering the reply. */
-  mood: AnimationName
-}
+export type AssistantEvent =
+  | { type: 'mood'; mood: AnimationName } // how Pixel should feel once the reply is done
+  | { type: 'text'; delta: string } // next chunk of the reply
 
-/** Swap this for a real model call later; the chat only depends on this shape. */
-export type Assistant = (history: ChatMessage[]) => Promise<AssistantReply>
+/**
+ * Streams a reply for the conversation so far. Swap this for a real model call later;
+ * the chat only depends on this shape. Must stop (throwing an AbortError) when `signal` aborts.
+ */
+export type Assistant = (history: ChatMessage[], signal: AbortSignal) => AsyncIterable<AssistantEvent>
 
 interface Rule {
   match: RegExp
@@ -40,9 +41,28 @@ const FALLBACK = [
 
 const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)]
 
-export const mockAssistant: Assistant = async (history) => {
+function sleep(ms: number, signal: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'))
+    const id = setTimeout(resolve, ms)
+    signal.addEventListener('abort', () => {
+      clearTimeout(id)
+      reject(new DOMException('Aborted', 'AbortError'))
+    }, { once: true })
+  })
+}
+
+export const mockAssistant: Assistant = async function* (history, signal) {
   const last = [...history].reverse().find((m) => m.role === 'user')?.text ?? ''
   const rule = RULES.find((r) => r.match.test(last))
-  await new Promise((r) => setTimeout(r, 900 + Math.random() * 1100))
-  return rule ? { text: pick(rule.replies), mood: rule.mood } : { text: pick(FALLBACK), mood: 'idle2' }
+  const text = rule ? pick(rule.replies) : pick(FALLBACK)
+
+  await sleep(700 + Math.random() * 900, signal) // "thinking"
+  yield { type: 'mood', mood: rule?.mood ?? 'idle2' }
+
+  // stream word by word, pausing a little longer after punctuation
+  for (const word of text.split(/(?<=\s)/)) {
+    yield { type: 'text', delta: word }
+    await sleep(/[.!?…]\s*$/.test(word) ? 260 : /[,:;]\s*$/.test(word) ? 140 : 45 + Math.random() * 45, signal)
+  }
 }

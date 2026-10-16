@@ -20,14 +20,18 @@ interface Props {
   placement: AttachmentPlacement
   messages: ChatMessage[]
   thinking: boolean
+  streamingId: number | null
   size: ChatSize
   /** shift: how far the pet-side edge moved, so the pet can move with it. */
   onResize: (size: ChatSize, shift: { x: number; y: number }) => void
   onSend: (text: string) => void
+  onStop: () => void
+  onClear: () => void
   onClose: () => void
 }
 
-export function Chat({ placement, messages, thinking, size, onResize, onSend, onClose }: Props) {
+export function Chat({ placement, messages, thinking, streamingId, size, onResize, onSend, onStop, onClear, onClose }: Props) {
+  const busy = thinking || streamingId !== null
   const [draft, setDraft] = useState('')
   const input = useRef<HTMLInputElement>(null)
   const list = useRef<HTMLDivElement>(null)
@@ -48,7 +52,7 @@ export function Chat({ placement, messages, thinking, size, onResize, onSend, on
   const submit = (e: FormEvent) => {
     e.preventDefault()
     const text = draft.trim()
-    if (!text || thinking) return
+    if (!text || busy) return
     onSend(text)
     setDraft('')
   }
@@ -94,8 +98,13 @@ export function Chat({ placement, messages, thinking, size, onResize, onSend, on
       <header className="chat-head">
         <span className="chat-dot" />
         <strong>Pixel</strong>
-        <span className="chat-sub">{thinking ? 'thinking…' : 'online'}</span>
-        <button className="chat-close" onClick={onClose} aria-label="Close chat">
+        <span className="chat-sub">{thinking ? 'thinking…' : streamingId !== null ? 'typing…' : 'online'}</span>
+        {messages.length > 0 && (
+          <button className="chat-clear" onClick={onClear} title="Clear conversation">
+            Clear
+          </button>
+        )}
+        <button className="chat-close" onClick={onClose} aria-label="Close chat" title="Close (Esc)">
           ×
         </button>
       </header>
@@ -103,8 +112,8 @@ export function Chat({ placement, messages, thinking, size, onResize, onSend, on
       <div className="chat-list" ref={list}>
         {messages.length === 0 && <div className="chat-empty">Hi! I'm Pixel. Ask me anything.</div>}
         {messages.map((m) => (
-          <div key={m.id} className={`msg msg-${m.role}`}>
-            {m.text}
+          <div key={m.id} className={`msg msg-${m.role}${m.id === streamingId ? ' streaming' : ''}`}>
+            {m.id === streamingId ? m.text.trimEnd() : m.text}
           </div>
         ))}
         {thinking && (
@@ -127,10 +136,16 @@ export function Chat({ placement, messages, thinking, size, onResize, onSend, on
       )}
 
       <form className="chat-input" onSubmit={submit}>
-        <input ref={input} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask Pixel…" />
-        <button type="submit" disabled={!draft.trim() || thinking}>
-          Send
-        </button>
+        <input ref={input} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask Pixel…" aria-label="Message Pixel" />
+        {busy ? (
+          <button type="button" className="stop" onClick={onStop}>
+            Stop
+          </button>
+        ) : (
+          <button type="submit" disabled={!draft.trim()}>
+            Send
+          </button>
+        )}
       </form>
 
       {CORNERS.map((c) => (

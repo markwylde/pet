@@ -2,22 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import { Chat, type ChatSize } from './chat/Chat'
 import { mockAssistant, type ChatMessage } from './chat/mockAssistant'
 import { ANIMATIONS, CATEGORIES, type AnimationName } from './pet/animations'
-import { Pet, STATUS_BAR_H, type PetHandle, type Visibility } from './pet/Pet'
+import { Pet, STATUS_BAR_H, type PetHandle, type Point, type Visibility } from './pet/Pet'
 import { PetSvg } from './pet/PetSvg'
 import { BASE_POSE } from './pet/pose'
+import { isBoolean, isNumber, isPoint, isSize, loadSaved, save, usePersistentState } from './usePersistentState'
 
 const HIDE_AFTER = 10
-const CHAT_SIZE_KEY = 'pixel.chatSize'
+const MAX_SAVED_MESSAGES = 100
 
-function loadChatSize(): ChatSize {
-  try {
-    const v = JSON.parse(localStorage.getItem(CHAT_SIZE_KEY) ?? '')
-    if (typeof v?.w === 'number' && typeof v?.h === 'number') return v
-  } catch {
-    // no saved size
-  }
-  return { w: 320, h: 380 }
-}
+const isMessages = (v: unknown): v is ChatMessage[] =>
+  Array.isArray(v) && v.every((m) => isNumber(m?.id) && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string')
 
 function useClock() {
   const [now, setNow] = useState(() => new Date())
@@ -33,37 +27,83 @@ export default function App() {
   const tray = useRef<HTMLButtonElement>(null)
   const [current, setCurrent] = useState<AnimationName>('idle1')
   const [visibility, setVisibility] = useState<Visibility>('shown')
-  const [loop, setLoop] = useState(false)
-  const [autoHide, setAutoHide] = useState(true)
-  const [speed, setSpeed] = useState(1)
-  const [size, setSize] = useState(1)
+  const [loop, setLoop] = usePersistentState('loop', false, isBoolean)
+  const [autoHide, setAutoHide] = usePersistentState('autoHide', true, isBoolean)
+  const [speed, setSpeed] = usePersistentState('speed', 1, isNumber)
+  const [size, setSize] = usePersistentState('size', 1, isNumber)
+  const [initialPosition] = useState(() => loadSaved<Point | null>('position', null, isPoint))
   const clock = useClock()
 
   const [chatOpen, setChatOpen] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [messages, setMessages] = usePersistentState<ChatMessage[]>('messages', [], isMessages)
+  const [chatSize, setChatSize] = usePersistentState<ChatSize>('chatSize', { w: 320, h: 380 }, isSize)
   const [thinking, setThinking] = useState(false)
-  const [chatSize, setChatSize] = useState(loadChatSize)
-  const resizeChat = (size: ChatSize, shift: { x: number; y: number }) => {
-    setChatSize(size)
+  const [streamingId, setStreamingId] = useState<number | null>(null)
+  const [announcement, setAnnouncement] = useState('')
+  const nextId = useRef(messages.reduce((max, m) => Math.max(max, m.id), 0) + 1)
+  const abort = useRef<AbortController | null>(null)
+
+  const busy = thinking || streamingId !== null
+
+  const resizeChat = (next: ChatSize, shift: { x: number; y: number }) => {
+    setChatSize(next)
     if (shift.x || shift.y) pet.current?.nudge(shift.x, shift.y)
-    try {
-      localStorage.setItem(CHAT_SIZE_KEY, JSON.stringify(size))
-    } catch {
-      // storage unavailable; size just won't persist
-    }
   }
-  const nextId = useRef(1)
-  const closeChat = () => setChatOpen(false)
+
+  const closeChat = () => {
+    setChatOpen(false)
+    pet.current?.focus()
+  }
 
   const send = async (text: string) => {
-    const history = [...messages, { id: nextId.current++, role: 'user' as const, text }]
-    setMessages(history)
+    const history: ChatMessage[] = [...messages, { id: nextId.current++, role: 'user', text }]
+    const replyId = nextId.current++
+    const ctrl = new AbortController()
+    abort.current = ctrl
+    setMessages(history.slice(-MAX_SAVED_MESSAGES))
     setThinking(true)
-    pet.current?.play('busy1', { speech: false })
-    const reply = await mockAssistant(history)
-    setMessages((m) => [...m, { id: nextId.current++, role: 'assistant', text: reply.text }])
-    setThinking(false)
-    pet.current?.play(reply.mood, { speech: false })
+    pet.current?.play('busy1', { speech: false, loop: true })
+
+    let mood: AnimationName = 'idle1'
+    let reply = ''
+    try {
+      for await (const ev of mockAssistant(history, ctrl.signal)) {
+        if (ev.type === 'mood') {
+          mood = ev.mood
+          continue
+        }
+        if (!reply) {
+          // first words: swap the typing dots for a live message and start talking
+          setThinking(false)
+          setStreamingId(replyId)
+          setMessages((m) => [...m, { id: replyId, role: 'assistant', text: '' }])
+          pet.current?.play('talk', { speech: false, loop: true })
+        }
+        reply += ev.delta
+        const sofar = reply
+        setMessages((m) => m.map((msg) => (msg.id === replyId ? { ...msg, text: sofar } : msg)))
+      }
+      setAnnouncement(reply)
+    } catch (err) {
+      if (!ctrl.signal.aborted) {
+        mood = 'sad2'
+        setMessages((m) => [...m, { id: nextId.current++, role: 'assistant', text: `Oops, something broke: ${String(err)}` }])
+      } else {
+        mood = 'idle1'
+      }
+    } finally {
+      if (abort.current === ctrl) abort.current = null
+      setThinking(false)
+      setStreamingId(null)
+      pet.current?.play(mood, { speech: false })
+    }
+  }
+
+  const stop = () => abort.current?.abort()
+
+  const clearChat = () => {
+    stop()
+    setMessages([])
   }
 
   const onVisibilityChange = (v: Visibility) => {
@@ -84,6 +124,9 @@ export default function App() {
         <header>
           <h1>Pixel the Terminal</h1>
           <p>Click me to chat. Drag me around, drag fast to go turbo. Leave me alone and I'll nap in the tray.</p>
+          <p className="hint">
+            Keyboard: <kbd>Tab</kbd> to Pixel, <kbd>Enter</kbd> to chat, arrows to fly (<kbd>Shift</kbd> for turbo), <kbd>Esc</kbd> to close.
+          </p>
         </header>
 
         {CATEGORIES.map((cat) => (
@@ -134,8 +177,10 @@ export default function App() {
 
       <Pet
         ref={pet}
-        options={{ loop, speed, autoHide, hideAfter: HIDE_AFTER, keepAwake: chatOpen, size }}
+        options={{ loop, speed, autoHide, hideAfter: HIDE_AFTER, keepAwake: chatOpen || busy, size }}
         getTrayPoint={getTrayPoint}
+        initialPosition={initialPosition}
+        onRest={(p) => save('position', p)}
         onAnimationChange={setCurrent}
         onVisibilityChange={onVisibilityChange}
         onPetClick={() => setChatOpen((o) => !o)}
@@ -146,14 +191,21 @@ export default function App() {
               placement={placement}
               messages={messages}
               thinking={thinking}
+              streamingId={streamingId}
               size={chatSize}
               onResize={resizeChat}
               onSend={send}
+              onStop={stop}
+              onClear={clearChat}
               onClose={closeChat}
             />
           )
         }
       />
+
+      <div className="sr-only" aria-live="polite">
+        {announcement && `Pixel says: ${announcement}`}
+      </div>
 
       <footer className="statusbar" style={{ height: STATUS_BAR_H }}>
         <span className="status-left mono">pixel@desktop ~ $</span>

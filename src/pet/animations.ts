@@ -15,10 +15,11 @@ export type AnimationName =
   | 'busy3'
   | 'flying-slow'
   | 'flying-fast'
+  | 'talk'
   | 'hide'
   | 'show'
 
-export type Category = 'idle' | 'happy' | 'sad' | 'busy' | 'flying' | 'system'
+export type Category = 'idle' | 'happy' | 'sad' | 'busy' | 'flying' | 'talk' | 'system'
 
 export interface MotionContext {
   vx: number // px/s, horizontal drag velocity
@@ -420,6 +421,32 @@ const flyingFast: AnimationDef = {
   },
 }
 
+// Mouth flaps in uneven "syllables" with short pauses, like Agent's lip-sync.
+// The chat loops this while a reply streams in.
+const talk: AnimationDef = {
+  name: 'talk',
+  label: 'Talk',
+  category: 'talk',
+  duration: 2.4,
+  speech: ['Blah blah blah…'],
+  pose: (t) => {
+    const syllable = Math.max(0, Math.sin(t * TAU * 4.2)) * (0.55 + 0.45 * Math.sin(t * TAU * 1.3 + 1))
+    const pause = t % 2.4 > 2.05 ? 0 : 1 // breath between phrases
+    const gesture = window_(t, 0.3, 1.9, 0.4)
+    return {
+      y: wave(t, 1.05, 1),
+      rot: wave(t, 0.42, 2),
+      eyeOpen: blink(t, [1.7]),
+      lookX: wave(t, 0.21, 1.5),
+      mouthCurve: 0.55,
+      mouthOpen: syllable * pause * 0.75,
+      mouthWidth: 0.85 + syllable * 0.2,
+      armR: 8 + gesture * (45 + wave(t, 0.8, 12)),
+      antenna: wave(t, 1.05, 4),
+    }
+  },
+}
+
 // Dives into the status bar. The controller moves the pet along its arc from HIDE_LEAP onward.
 export const HIDE_LEAP = 0.25
 const hide: AnimationDef = {
@@ -491,6 +518,7 @@ export const ANIMATIONS: Record<AnimationName, AnimationDef> = {
   busy3,
   'flying-slow': flyingSlow,
   'flying-fast': flyingFast,
+  talk,
   hide,
   show,
 }
@@ -503,4 +531,5 @@ export const CATEGORIES: { key: Category; title: string; names: AnimationName[] 
   { key: 'sad', title: 'Sad', names: ['sad1', 'sad2', 'sad3'] },
   { key: 'busy', title: 'Busy', names: ['busy1', 'busy2', 'busy3'] },
   { key: 'flying', title: 'Flying', names: ['flying-slow', 'flying-fast'] },
+  { key: 'talk', title: 'Talk', names: ['talk'] },
 ]
