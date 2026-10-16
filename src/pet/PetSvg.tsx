@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import type { EyeShape, Pose } from './pose'
 
 const PHOSPHOR = '#62ffb0'
@@ -278,20 +278,33 @@ function Brows({ k, lx, ly }: { k: number; lx: number; ly: number }) {
 }
 
 function Mouth({ curve, open, width, dx, dy }: { curve: number; open: number; width: number; dx: number; dy: number }) {
+  const clipId = useId()
   const w = 12 * width
   const y = MOUTH_Y + dy
   const endY = y - curve * 3
-  const ctrl = y + curve * 8
   const l = dx - w
   const r = dx + w
   if (open < 0.05) {
-    return <path d={`M ${l} ${endY} Q ${dx} ${ctrl} ${r} ${endY}`} stroke={PHOSPHOR} strokeWidth={3.5} fill="none" strokeLinecap="round" />
+    return <path d={`M ${l} ${endY} Q ${dx} ${y + curve * 8} ${r} ${endY}`} stroke={PHOSPHOR} strokeWidth={3.5} fill="none" strokeLinecap="round" />
   }
-  const lower = ctrl + open * 16
+  const k = Math.min(1, open)
+  // As it opens the upper lip flattens, so it reads as an opening rather than a thin crescent.
+  // A frown keeps its arch (crying wail); a smile's top lip flattens as it opens.
+  const upper = y + curve * 8 * (curve > 0 ? 1 - k * 0.75 : 1)
+  const depth = curve < 0 ? 1 + k * 6 : 2 + k * 13 + curve * 2 // how far the bottom lip drops below the corners
+  const bot = endY + depth / 0.75 // cubic control so the curve actually reaches `depth`
+  const d = `M ${l} ${endY} Q ${dx} ${upper} ${r} ${endY} C ${r - w * 0.05} ${bot} ${l + w * 0.05} ${bot} ${l} ${endY} Z`
+  const tongueRy = 2 + k * 3.5
   return (
     <g>
-      <path d={`M ${l} ${endY} Q ${dx} ${ctrl} ${r} ${endY} Q ${dx} ${lower} ${l} ${endY} Z`} fill="#0a2a1a" stroke={PHOSPHOR} strokeWidth={3} strokeLinejoin="round" />
-      {open > 0.4 && curve > 0 && <ellipse cx={dx} cy={(ctrl + lower) / 2 + 2} rx={w * 0.35} ry={open * 2.5} fill={PINK} opacity={0.8} />}
+      <clipPath id={clipId}>
+        <path d={d} />
+      </clipPath>
+      <path d={d} fill="#0a2a1a" />
+      {k > 0.3 && (
+        <ellipse clipPath={`url(#${clipId})`} cx={dx} cy={endY + depth - tongueRy * 0.4} rx={w * 0.55} ry={tongueRy} fill={PINK} opacity={0.85} />
+      )}
+      <path d={d} fill="none" stroke={PHOSPHOR} strokeWidth={3} strokeLinejoin="round" />
     </g>
   )
 }

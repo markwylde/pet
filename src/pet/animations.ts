@@ -421,28 +421,43 @@ const flyingFast: AnimationDef = {
   },
 }
 
-// Mouth flaps in uneven "syllables" with short pauses, like Agent's lip-sync.
-// The chat loops this while a reply streams in.
+// Cheap deterministic noise per syllable, so the talking never looks like a metronome.
+const hash = (n: number) => {
+  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453
+  return x - Math.floor(x)
+}
+
+/**
+ * Agent-style lip flap: a stream of syllables, each with its own mouth shape —
+ * wide "ah", round "oh", small "eh" — plus the odd closed "m" and a breath between phrases.
+ */
+const SYLLABLES_PER_SEC = 5
 const talk: AnimationDef = {
   name: 'talk',
   label: 'Talk',
   category: 'talk',
   duration: 2.4,
-  speech: ['Blah blah blah…'],
   pose: (t) => {
-    const syllable = Math.max(0, Math.sin(t * TAU * 4.2)) * (0.55 + 0.45 * Math.sin(t * TAU * 1.3 + 1))
-    const pause = t % 2.4 > 2.05 ? 0 : 1 // breath between phrases
+    const s = t * SYLLABLES_PER_SEC
+    const i = Math.floor(s)
+    const frac = s - i
+    const r = hash(i)
+    const breath = t % 2.4 > 2.1
+    const closed = breath || r < 0.15
+    // open fast, close a little slower
+    const env = closed ? 0 : Math.sin(Math.PI * Math.min(1, frac < 0.35 ? frac / 0.7 : 0.5 + (frac - 0.35) / 1.3))
+    const shape = r < 0.45 ? { open: 1, width: 0.95 } : r < 0.75 ? { open: 0.85, width: 0.55 } : { open: 0.5, width: 0.9 }
     const gesture = window_(t, 0.3, 1.9, 0.4)
     return {
-      y: wave(t, 1.05, 1),
-      rot: wave(t, 0.42, 2),
+      y: wave(t, 1.05, 1) - env * 0.6,
+      rot: wave(t, 0.42, 1.5),
       eyeOpen: blink(t, [1.7]),
       lookX: wave(t, 0.21, 1.5),
-      mouthCurve: 0.55,
-      mouthOpen: syllable * pause * 0.75,
-      mouthWidth: 0.85 + syllable * 0.2,
-      armR: 8 + gesture * (45 + wave(t, 0.8, 12)),
-      antenna: wave(t, 1.05, 4),
+      mouthCurve: 0.3,
+      mouthOpen: env * shape.open,
+      mouthWidth: 0.8 + (shape.width - 0.8) * env,
+      armR: 8 + gesture * (40 + wave(t, 0.8, 10)),
+      antenna: wave(t, 1.05, 3),
     }
   },
 }
