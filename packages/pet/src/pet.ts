@@ -73,6 +73,8 @@ const NO_CHAT: PetChat = {
   send: async () => {},
   stop() {},
   clear() {},
+  setMessages() {},
+  setStatus() {},
 }
 
 /**

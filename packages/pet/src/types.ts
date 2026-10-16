@@ -94,7 +94,20 @@ export interface ChatMessage {
   text: string
   /** `Date.now()` when the message was created. */
   createdAt: number
+  /** Buttons shown under the message. Clicking one emits `chat:action`. */
+  actions?: ChatAction[]
 }
+
+/** A button on a chat message, e.g. "Allow" / "Decline" on a question the assistant asked. */
+export interface ChatAction {
+  id: string
+  label: string
+  /** How the button looks. Defaults to `'default'`. */
+  kind?: 'default' | 'primary' | 'danger'
+}
+
+/** What the chat is doing, for a host that drives it (see `ChatOptions.onSend`). */
+export type ChatStatus = 'idle' | 'thinking' | 'streaming'
 
 /**
  * One piece of an assistant reply:
@@ -135,8 +148,19 @@ export type Assistant = (
 ) => string | Promise<string> | AsyncIterable<AssistantChunk>
 
 export interface ChatOptions {
-  /** Produces replies. */
-  assistant: Assistant
+  /** Produces replies. Required unless `onSend` is set. */
+  assistant?: Assistant
+  /**
+   * Take over the conversation. When set, the chat stops keeping its own history: sending calls
+   * `onSend(text)` and the host shows the conversation with `chat.setMessages()` and
+   * `chat.setStatus()`. Use it when the conversation lives somewhere else, e.g. on a server
+   * shared by several clients. `assistant` is ignored.
+   */
+  onSend?: (text: string) => void
+  /** With `onSend`: called when the user presses Stop. */
+  onStop?: () => void
+  /** With `onSend`: called when the user presses Clear. */
+  onClear?: () => void
   /** Header title. Defaults to the character's name. */
   title?: string
   /** Shown while the conversation is empty. Defaults to "Hi! I'm {name}. Ask me anything." */
@@ -172,6 +196,10 @@ export interface PetChat {
   stop(): void
   /** Forget the conversation. */
   clear(): void
+  /** Replace the messages shown. Meant for a host that drives the chat with `onSend`. */
+  setMessages(messages: readonly ChatMessage[]): void
+  /** Show the chat as thinking, streaming or idle, with the matching animation. Meant for `onSend` hosts. */
+  setStatus(status: ChatStatus): void
 }
 
 // ---------- actions & events ----------
@@ -225,6 +253,8 @@ export interface PetEvents {
   'chat:close': undefined
   /** A message was added — the user's, or the assistant's once it has finished streaming. */
   'chat:message': { message: ChatMessage }
+  /** A button on a message was pressed. */
+  'chat:action': { message: ChatMessage; action: ChatAction }
 }
 
 /** A pet on the page. Create one with `Pet()` / `createPet()`. */

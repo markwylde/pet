@@ -217,6 +217,21 @@ export const css = /* css */ `
 .mwpet-typing span:nth-child(3) { animation-delay: 0.3s; }
 @keyframes mwpet-typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5; } 30% { transform: translateY(-4px); opacity: 1; } }
 
+.mwpet-msg-actions { display: flex; flex-wrap: wrap; gap: 6px; align-self: flex-start; }
+.mwpet-msg-actions button {
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--mwpet-border);
+  background: var(--mwpet-surface);
+  color: var(--mwpet-text);
+  cursor: pointer;
+}
+.mwpet-msg-actions button:hover { border-color: var(--mwpet-accent); }
+.mwpet-msg-actions button:focus-visible { outline: 2px solid var(--mwpet-accent); outline-offset: 1px; }
+.mwpet-msg-actions button[data-kind='primary'] { background: var(--mwpet-accent); color: var(--mwpet-accent-text); border-color: var(--mwpet-accent); }
+.mwpet-msg-actions button[data-kind='danger'] { color: #c2410c; }
 .mwpet-chat-suggest { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 10px; }
 .mwpet-chat-suggest[hidden] { display: none; }
 .mwpet-chat-suggest button {

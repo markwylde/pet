@@ -22,7 +22,7 @@ type Handlers = {
 /**
  * Props are the {@link PetOptions} plus an `on…` prop per event:
  * `onClick`, `onAnimationstart`, `onAnimationend`, `onShow`, `onHide`, `onDragstart`,
- * `onDragend`, `onMove`, `onChatOpen`, `onChatClose`, `onChatMessage`.
+ * `onDragend`, `onMove`, `onChatOpen`, `onChatClose`, `onChatMessage`, `onChatAction`.
  */
 export type PetProps = PetOptions & Handlers
 
@@ -38,6 +38,7 @@ const EVENTS: [keyof Handlers, keyof PetEvents][] = [
   ['onChatOpen', 'chat:open'],
   ['onChatClose', 'chat:close'],
   ['onChatMessage', 'chat:message'],
+  ['onChatAction', 'chat:action'],
 ]
 
 const UPDATABLE = ['character', 'size', 'speed', 'insets', 'zIndex', 'draggable', 'keyboard', 'autoHide', 'dock', 'theme', 'label', 'chat'] as const

@@ -193,6 +193,105 @@ describe('chat', () => {
     expect(balloon.dataset.align).toBeDefined()
   })
 
+  it('hands sending to the host when onSend is set', async () => {
+    const onSend = vi.fn()
+    const onStop = vi.fn()
+    const onClear = vi.fn()
+    const pet = make({ persist: 'driven-pet', chat: { onSend, onStop, onClear } })
+    await pet.chat.send('hello')
+    expect(onSend).toHaveBeenCalledWith('hello')
+    expect(pet.chat.isOpen).toBe(true)
+    expect(pet.chat.messages).toEqual([]) // the host owns the history
+
+    pet.chat.setMessages([
+      { id: 'u1', role: 'user', text: 'hello', createdAt: 1 },
+      { id: 'a1', role: 'assistant', text: 'Hi', createdAt: 2 },
+    ])
+    pet.chat.setStatus('streaming')
+    expect(pet.chat.busy).toBe(true)
+    expect(pet.animation).toBe('talk')
+    pet.chat.setMessages([
+      { id: 'u1', role: 'user', text: 'hello', createdAt: 1 },
+      { id: 'a1', role: 'assistant', text: 'Hi there', createdAt: 2 },
+    ])
+    const streaming = pet.element.querySelector<HTMLElement>('.mwpet-msg[data-streaming]')!
+    expect(streaming.textContent).toBe('Hi there')
+
+    pet.chat.stop()
+    expect(onStop).toHaveBeenCalledTimes(1)
+    pet.chat.setStatus('idle')
+    expect(pet.chat.busy).toBe(false)
+    pet.chat.clear()
+    expect(onClear).toHaveBeenCalledTimes(1)
+    expect(pet.chat.messages).toHaveLength(2) // until the host says otherwise
+    expect(localStorage.getItem('driven-pet') ?? '').not.toContain('Hi there')
+  })
+
+  it('does not bring back a saved conversation when the host drives the chat', async () => {
+    const first = make({ persist: 'mixed-pet', chat: { assistant: () => 'pong' } })
+    await first.chat.send('ping')
+    first.destroy()
+    const second = make({ persist: 'mixed-pet', chat: { onSend: () => {} } })
+    expect(second.chat.messages).toEqual([])
+  })
+
+  it('shows the thinking dots while the host says it is thinking', () => {
+    const pet = make({ chat: { onSend: () => {} } })
+    pet.chat.open()
+    pet.chat.setStatus('thinking')
+    expect(pet.element.querySelector('.mwpet-typing')).not.toBeNull()
+    expect(pet.animation).toBe('busy1')
+  })
+
+  it('renders message actions and emits chat:action', () => {
+    const pet = make({ chat: { onSend: () => {} } })
+    const actions = vi.fn()
+    pet.on('chat:action', actions)
+    const message = {
+      id: 'q1',
+      role: 'assistant' as const,
+      text: 'May I run npm test?',
+      createdAt: 1,
+      actions: [
+        { id: 'allow', label: 'Allow', kind: 'primary' as const },
+        { id: 'decline', label: 'Decline', kind: 'danger' as const },
+      ],
+    }
+    pet.chat.setMessages([message])
+    pet.chat.open()
+    const buttons = [...pet.element.querySelectorAll<HTMLButtonElement>('.mwpet-msg-actions button')]
+    expect(buttons.map((b) => [b.textContent, b.dataset.kind])).toEqual([
+      ['Allow', 'primary'],
+      ['Decline', 'danger'],
+    ])
+    expect(buttons[0].type).toBe('button')
+    expect(buttons[0].closest('[role="group"]')).not.toBeNull()
+    buttons[1].click()
+    expect(actions).toHaveBeenCalledWith({ message, action: message.actions[1] })
+  })
+
+  it('keeps actions reachable from the keyboard', () => {
+    const pet = make({ chat: { onSend: () => {} } })
+    const actions = vi.fn()
+    pet.on('chat:action', actions)
+    pet.chat.setMessages([{ id: 'q', role: 'assistant', text: 'Pick one', createdAt: 1, actions: [{ id: 'a', label: 'A' }] }])
+    pet.chat.open()
+    const button = pet.element.querySelector<HTMLButtonElement>('.mwpet-msg-actions button')!
+    button.focus()
+    expect(document.activeElement).toBe(button)
+    // native buttons turn Enter/Space into a click
+    button.click()
+    expect(actions).toHaveBeenCalledTimes(1)
+  })
+
+  it('drops actions when the host replaces the message without them', () => {
+    const pet = make({ chat: { onSend: () => {} } })
+    pet.chat.setMessages([{ id: 'q', role: 'assistant', text: 'Pick one', createdAt: 1, actions: [{ id: 'a', label: 'A' }] }])
+    pet.chat.setMessages([{ id: 'q', role: 'assistant', text: 'Pick one\n→ Allowed', createdAt: 1 }])
+    expect(pet.element.querySelector('.mwpet-msg-actions')).toBeNull()
+    expect(pet.element.querySelector('.mwpet-chat')!.textContent).toContain('Allowed')
+  })
+
   it('is a harmless no-op when disabled', async () => {
     const pet = make()
     expect(pet.chat.isOpen).toBe(false)
