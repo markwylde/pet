@@ -183,6 +183,15 @@ describe('chat', () => {
     expect(second.chat.messages.map((m) => m.text)).toEqual(['ping', 'pong'])
   })
 
+  it('opens on the roomier side of the pet', async () => {
+    const pet = make({ position: { x: window.innerWidth - 200, y: 300 }, chat: { assistant: () => 'hi' } })
+    pet.chat.open()
+    await new Promise((r) => setTimeout(r, 60))
+    const balloon = pet.element.querySelector<HTMLElement>('.mwpet-chat')!
+    expect(balloon.dataset.side).toBe('left')
+    expect(balloon.dataset.align).toBeDefined()
+  })
+
   it('is a harmless no-op when disabled', async () => {
     const pet = make()
     expect(pet.chat.isOpen).toBe(false)

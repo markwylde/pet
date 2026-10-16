@@ -1,6 +1,15 @@
 :root {
   --cream: #fffaf0;
   --paper: #ffffff;
+  --dot: rgba(31, 38, 51, 0.07);
+  --code-bg: rgba(31, 38, 51, 0.06);
+  --nav-bg: rgba(255, 250, 240, 0.82);
+  --tinted: rgba(255, 255, 255, 0.65);
+  --cloud: #ffffff;
+  --glass: rgba(255, 255, 255, 0.88);
+  --desk-a: #cfe9ff;
+  --desk-b: #ffe1ec;
+  --on-accent: #1f2633;
   --ink: #1f2633;
   --ink-soft: #4a5263;
   --muted: #7a8193;
@@ -21,6 +30,33 @@
   color-scheme: light;
 }
 
+/* Dark: the same whimsy after sunset. Applied by the header toggle (data-theme), which
+   starts from the visitor's OS preference. */
+:root[data-theme='dark'] .install {
+  border-color: var(--line);
+  background: #0b1018;
+}
+
+:root[data-theme='dark'] {
+  --cream: #121722;
+  --paper: #1b2230;
+  --ink: #eef2f8;
+  --ink-soft: #b8c1d1;
+  --muted: #8a93a6;
+  --line: #2a3242;
+  --mint-deep: #62ffb0;
+  --dot: rgba(255, 255, 255, 0.06);
+  --code-bg: rgba(255, 255, 255, 0.08);
+  --nav-bg: rgba(18, 23, 34, 0.82);
+  --tinted: rgba(255, 255, 255, 0.025);
+  --cloud: rgba(255, 255, 255, 0.07);
+  --glass: rgba(27, 34, 48, 0.92);
+  --desk-a: #1e3350;
+  --desk-b: #3a2340;
+  --shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -32,8 +68,9 @@ html {
 
 body {
   margin: 0;
+  transition: background-color 0.3s, color 0.3s;
   background: var(--cream);
-  background-image: radial-gradient(rgba(31, 38, 51, 0.07) 1.2px, transparent 1.2px);
+  background-image: radial-gradient(var(--dot) 1.2px, transparent 1.2px);
   background-size: 22px 22px;
   color: var(--ink);
   font: 17px/1.6 var(--body);
@@ -58,7 +95,7 @@ code {
   font: 0.86em var(--mono);
   padding: 0.12em 0.4em;
   border-radius: 6px;
-  background: rgba(31, 38, 51, 0.06);
+  background: var(--code-bg);
 }
 
 .eyebrow {
@@ -80,7 +117,7 @@ code {
   justify-content: space-between;
   height: 64px;
   padding: 0 clamp(16px, 4vw, 40px);
-  background: rgba(255, 250, 240, 0.82);
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid transparent;
   transition: border-color 0.2s;
@@ -122,6 +159,40 @@ code {
 
 .nav-links a:hover {
   color: var(--ink);
+}
+
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--ink);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px) rotate(-12deg);
+}
+
+.theme-toggle:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.theme-toggle:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 3px;
+}
+
+.nav-links {
+  align-items: center;
 }
 
 .nav-gh {
@@ -167,6 +238,7 @@ code {
 
 .btn-primary {
   background: var(--mint);
+  color: var(--on-accent);
 }
 
 .btn-small {
@@ -197,7 +269,7 @@ code {
   gap: 10px;
   margin-top: 26px;
   padding: 12px 18px;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 14px;
   background: var(--night);
   color: #e6edf5;
@@ -323,7 +395,7 @@ code {
   width: 140px;
   height: 46px;
   border-radius: 999px;
-  background: #fff;
+  background: var(--cloud);
   box-shadow: 0 6px 0 rgba(31, 38, 51, 0.04);
   opacity: 0.9;
   animation: drift 40s linear infinite;
@@ -334,7 +406,7 @@ code {
   content: '';
   position: absolute;
   border-radius: 50%;
-  background: #fff;
+  background: var(--cloud);
 }
 
 .cloud::before {
@@ -445,7 +517,7 @@ code {
 }
 
 .section-tinted {
-  background: rgba(255, 255, 255, 0.65);
+  background: var(--tinted);
   border-block: 1px solid var(--line);
 }
 
@@ -498,7 +570,7 @@ code {
   height: 50px;
   margin-bottom: 14px;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--tint) 35%, white);
+  background: color-mix(in srgb, var(--tint) 35%, var(--paper));
   font-size: 26px;
 }
 
@@ -727,7 +799,7 @@ code {
   height: 20px;
   border-radius: 50%;
   background: var(--mint);
-  color: var(--ink);
+  color: var(--on-accent);
   font: 700 12px var(--display);
 }
 
@@ -747,7 +819,7 @@ code {
   height: 300px;
   border: 2px solid var(--ink);
   border-radius: var(--radius);
-  background: linear-gradient(160deg, #cfe9ff, #ffe1ec);
+  background: linear-gradient(160deg, var(--desk-a), var(--desk-b));
   box-shadow: 8px 8px 0 var(--lilac);
   overflow: hidden;
 }
@@ -760,7 +832,7 @@ code {
   height: 52%;
   border: 2px solid var(--ink);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--glass);
 }
 
 .fake-window span {
@@ -786,7 +858,7 @@ code {
   height: 48px;
   padding: 0 12px;
   border-top: 2px solid var(--ink);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--glass);
 }
 
 .fake-start {

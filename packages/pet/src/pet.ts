@@ -170,6 +170,7 @@ export function createPet(options: PetOptions = {}): PetInstance {
     lean: 0,
     placement: { side: 'right', align: 'bottom' } as Placement,
     relayout: true,
+    freshLayout: true, // next placement starts from scratch (the chat just opened)
     mode: 'normal' as 'normal' | 'drag' | 'glide' | 'fly',
     flight: null as { from: Point; to: Point; t: number; dur: number; resolve: (v: boolean) => void } | null,
     pointerOffset: { x: 0, y: 0 },
@@ -378,6 +379,7 @@ export function createPet(options: PetOptions = {}): PetInstance {
     emit: <K extends keyof PetEvents>(event: K, payload: PetEvents[K]) => {
       if (event === 'chat:open') {
         st.relayout = true
+        st.freshLayout = true
         speech.hidden = true // the balloon takes over; don't talk over it
       }
       emitter.emit(event, payload)
@@ -576,7 +578,8 @@ export function createPet(options: PetOptions = {}): PetInstance {
     const att = st.state === 'shown' ? (chat?.attachment ?? null) : null
     if (att && chat) {
       // only re-pick the side when the pet travels, never mid-resize
-      if (st.relayout || st.mode !== 'normal') st.placement = choosePlacement(st.pos, opt.size, att, st.placement, b)
+      if (st.relayout || st.mode !== 'normal') st.placement = choosePlacement(st.pos, opt.size, att, st.placement, b, st.freshLayout)
+      st.freshLayout = false
       chat.layout(st.placement, attachmentMax(opt.size, st.placement, b))
     }
     st.relayout = false

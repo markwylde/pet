@@ -12,6 +12,24 @@ const heroSize = () => (narrow() ? 1.0 : 1.45)
 const perchSize = () => (narrow() ? 0.55 : 0.8)
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
 
+// ---------- theme ----------
+// The inline script in index.html sets data-theme before first paint (saved choice, else the
+// OS preference). The toggle flips it, remembers the choice, and the pet's chat follows along.
+const THEME_KEY = 'pet-site-theme'
+type SiteTheme = 'light' | 'dark'
+function currentTheme(): SiteTheme {
+  return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
+}
+function applyTheme(theme: SiteTheme) {
+  document.documentElement.dataset.theme = theme
+  const toggle = document.querySelector<HTMLButtonElement>('#theme-toggle')!
+  const next = theme === 'dark' ? 'light' : 'dark'
+  toggle.textContent = theme === 'dark' ? '☀️' : '🌙'
+  toggle.setAttribute('aria-label', `Switch to ${next} mode`)
+  toggle.title = `Switch to ${next} mode`
+  pet?.set({ theme })
+}
+
 // ---------- custom animations used by the page ----------
 
 /** Glance in the direction you're scrolling. */
@@ -61,7 +79,7 @@ const pet = Pet({
   size: heroSize(),
   position: stageSpot(heroSize()),
   insets: { top: NAV_H },
-  theme: 'light',
+  theme: currentTheme(),
   dock: () => tray,
   animations: [watch(1), watch(-1), dance],
   chat: {
@@ -71,6 +89,28 @@ const pet = Pet({
   },
 })
 Object.assign(window, { pet }) // poke at it from the console
+
+applyTheme(currentTheme())
+$('#theme-toggle').addEventListener('click', () => {
+  const theme = currentTheme() === 'dark' ? 'light' : 'dark'
+  try {
+    localStorage.setItem(THEME_KEY, theme)
+  } catch {
+    // storage blocked: the choice just lasts for this visit
+  }
+  applyTheme(theme)
+  void pet.play(theme === 'dark' ? 'idle3' : 'happy1') // yawn at dusk, perk up at dawn
+})
+// follow the OS live until the visitor picks for themselves
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+  let saved: string | null = null
+  try {
+    saved = localStorage.getItem(THEME_KEY)
+  } catch {
+    // ignore
+  }
+  if (!saved) applyTheme(e.matches ? 'dark' : 'light')
+})
 
 // ---------- hero → perch choreography ----------
 // stage: standing on the rug, scrolling with the hero
@@ -144,6 +184,15 @@ pet.on('dragstart', () => {
   if (mode === 'stage' || mode === 'perch') mode = 'free'
 })
 pet.on('dragend', () => $('.stage-hint').classList.add('gone'))
+
+// While chatting on the hero, stop pinning him to the rug so the library can keep
+// him and the balloon on screen together. He hops back when the chat closes.
+pet.on('chat:open', () => {
+  if (mode === 'stage') mode = 'free'
+})
+pet.on('chat:close', () => {
+  if (mode === 'free' && !heroGone()) void land()
+})
 
 // glance along with the scroll
 let lastY = window.scrollY

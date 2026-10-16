@@ -104,6 +104,8 @@ export class Chat implements PetChat {
       form,
     )
     for (const corner of ['nw', 'ne', 'sw', 'se'] as Corner[]) this.element.append(this.grip(corner))
+    this.element.dataset.side = this.placement.side
+    this.element.dataset.align = this.placement.align
 
     close.addEventListener('click', () => this.close())
     this.clear_.addEventListener('click', () => this.clear())

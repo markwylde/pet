@@ -43,8 +43,16 @@ function attachRect(p: Point, size: number, att: Size, pl: Placement): Rect {
   return { left, top, right: left + att.width, bottom: top + att.height }
 }
 
-/** Keep the current side if it fits, otherwise flip, otherwise take the roomier side. */
-export function choosePlacement(p: Point, size: number, att: Size, prev: Placement, b: Rect): Placement {
+/**
+ * Keep the current side if it fits, otherwise flip, otherwise take the roomier side.
+ * With `fresh` (the balloon just opened) start from the roomier side and above the feet.
+ */
+export function choosePlacement(p: Point, size: number, att: Size, prev: Placement, b: Rect, fresh = false): Placement {
+  if (fresh) {
+    const roomR = b.right - (p.x + BOX.width * size)
+    const roomL = p.x - b.left
+    prev = { side: roomL >= roomR ? 'left' : 'right', align: 'bottom' }
+  }
   const fitsX = (side: Placement['side']) => {
     const r = attachRect(p, size, att, { ...prev, side })
     return r.left >= b.left + MARGIN && r.right <= b.right - MARGIN
