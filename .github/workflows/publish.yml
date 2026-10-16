@@ -1,0 +1,28 @@
+# Publishes packages/pet to GitHub Packages (npm.pkg.github.com) when a v* tag is pushed.
+# Bump packages/pet/package.json's version, then: git tag v0.2.0 && git push origin v0.2.0
+name: Publish package
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://npm.pkg.github.com
+          scope: '@markwylde'
+      - run: npm ci
+      - run: npm publish -w @markwylde/pet
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

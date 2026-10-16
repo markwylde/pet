@@ -5,6 +5,12 @@
   "keywords": ["pet", "mascot", "assistant", "companion", "animation", "svg", "chat", "ai", "electron", "tauri", "react"],
   "author": "Mark Wylde <me@markwylde.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/markwylde/pet.git",
+    "directory": "packages/pet"
+  },
+  "homepage": "https://markwylde.com/pet/",
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",

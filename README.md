@@ -19,7 +19,15 @@ npm run lint
 
 ## Publishing
 
+Published to GitHub Packages by `.github/workflows/publish.yml` whenever a `v*` tag is pushed. Bump the version in `packages/pet/package.json`, commit, then:
+
 ```sh
-cd packages/pet
-npm publish --access public   # runs typecheck, tests and build first (prepublishOnly)
+git tag v0.1.1 && git push origin v0.1.1
+```
+
+To install it, point the `@markwylde` scope at GitHub Packages (needs a token with `read:packages`):
+
+```sh
+echo "@markwylde:registry=https://npm.pkg.github.com" >> .npmrc
+npm install @markwylde/pet
 ```
