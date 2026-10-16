@@ -32,6 +32,7 @@ export function defineCharacter(input: CharacterInput): Character {
   return {
     kind: 'desktop pet',
     face: 'crt',
+    skeleton: true,
     antenna: true,
     rocket: true,
     effectsOffsetY: 0,

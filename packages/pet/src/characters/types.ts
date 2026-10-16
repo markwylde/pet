@@ -49,6 +49,13 @@ export interface Character {
    * spinner) appear in a thought bubble above the head.
    */
   face: 'crt' | 'matrix' | 'toon'
+  /**
+   * `true` (default): the library draws the shared skeleton (face, arms, legs, antenna and
+   * props) around your body; `arm`, `legs`, `antenna` and `rocket` adjust it part by part.
+   * `false`: `body` draws the whole figure from the pose; only the body motion, shadow, speed
+   * lines and the effects above the head are added, and the skeleton fields are ignored.
+   */
+  skeleton: boolean
   palette: {
     /** Colour of the face (for `toon`, the ink). */
     phosphor: string
@@ -83,7 +90,7 @@ export interface Character {
   effectsOffsetY: number
   /** viewBox that frames the character snugly, used by {@link renderIcon}. */
   iconViewBox: string
-  /** Draws the body behind the screen. Return SVG markup. */
+  /** Draws the body behind the screen (or, with `skeleton: false`, the whole figure). Return SVG markup. */
   body: (ctx: BodyContext) => string
   /** Draws one arm in place of the shared stick arm. `angle` is degrees raised outward, as in the pose. */
   arm?: (ctx: LimbContext & { side: 'L' | 'R'; angle: number; shoulder: Anchor }) => string
@@ -91,7 +98,7 @@ export interface Character {
   legs?: (ctx: LimbContext & { left: number; right: number }) => string
 }
 
-type Simple = 'kind' | 'face' | 'antenna' | 'rocket' | 'effectsOffsetY' | 'iconViewBox'
+type Simple = 'kind' | 'face' | 'skeleton' | 'antenna' | 'rocket' | 'effectsOffsetY' | 'iconViewBox'
 
 /**
  * What you pass to {@link defineCharacter}: a {@link Character} where everything with a

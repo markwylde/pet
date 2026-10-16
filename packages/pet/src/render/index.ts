@@ -13,7 +13,7 @@ export const STAGE_VIEWBOX = '-120 -250 240 290'
 function defs(ctx: RenderContext): string {
   const { palette } = ctx.character
   // a toon face has no screen, so it needs none of the screen's gradients or clip
-  const screenless = ctx.character.face === 'toon'
+  const screenless = ctx.character.skeleton && ctx.character.face === 'toon'
   return h(
     'defs',
     null,
@@ -117,6 +117,30 @@ function screenOverlays(p: Pose, ctx: RenderContext): string {
     .join('')
 }
 
+/** The shared skeleton (limbs, antenna, face, props) around the character's body, with any parts the character replaces. */
+function robot(p: Pose, time: number, ctx: RenderContext): string {
+  const c = ctx.character
+  const limb = { pose: p, time, id: ctx.id, url: ctx.url, h }
+  const arm = (side: 'L' | 'R', angle: number) => {
+    if (!c.arm) return parts.arm(side, angle, ctx)
+    const { x, y } = c.anchors.shoulder
+    return c.arm({ ...limb, side, angle, shoulder: { x: side === 'L' ? -x : x, y } })
+  }
+  return [
+    p.flame > 0 && c.rocket && parts.flame(time, p.flame, ctx),
+    c.legs ? c.legs({ ...limb, left: p.legL, right: p.legR }) : parts.legs(p.legL, p.legR, ctx),
+    c.antenna && parts.antenna(p.antenna, p.propeller, time, ctx),
+    c.body(limb),
+    c.face === 'toon' ? toonLayer(p, time, ctx) : screen(p, time, ctx),
+    p.keyboard > 0 && parts.keyboard(p.keyboard, time),
+    arm('L', p.armL),
+    arm('R', p.armR),
+    p.sweat > 0.01 && parts.sweat(p.sweat, time, ctx),
+  ]
+    .filter(Boolean)
+    .join('')
+}
+
 /** Inner SVG markup for one frame. */
 export function renderFrame(p: Pose, time: number, ctx: RenderContext): string {
   const c = ctx.character
@@ -124,31 +148,13 @@ export function renderFrame(p: Pose, time: number, ctx: RenderContext): string {
   const fx = path`translate(${p.x} ${p.y})`
   const lift = Math.max(0, -p.y)
   const shadow = Math.max(0.35, 1 - lift / 120) * (p.propeller > 0 ? 0.6 : 1)
-  const toon = c.face === 'toon'
-  const limb = { pose: p, time, id: ctx.id, url: ctx.url, h }
-  const arm = (side: 'L' | 'R', angle: number) => {
-    if (!c.arm) return parts.arm(side, angle, ctx)
-    const { x, y } = c.anchors.shoulder
-    return c.arm({ ...limb, side, angle, shoulder: { x: side === 'L' ? -x : x, y } })
-  }
+  const toon = c.skeleton && c.face === 'toon'
   const overlays = toon ? screenOverlays(p, ctx) : ''
   return [
     defs(ctx),
     h('ellipse', { cx: p.x, cy: 6, rx: 44 * shadow, ry: 7 * shadow, fill: 'rgba(0,0,0,0.22)' }),
     p.speedLines > 0 && parts.speedLines(time, p.speedAngle, p.speedLines, fx),
-    h(
-      'g',
-      { transform: body },
-      p.flame > 0 && c.rocket && parts.flame(time, p.flame, ctx),
-      c.legs ? c.legs({ ...limb, left: p.legL, right: p.legR }) : parts.legs(p.legL, p.legR, ctx),
-      c.antenna && parts.antenna(p.antenna, p.propeller, time, ctx),
-      c.body(limb),
-      toon ? toonLayer(p, time, ctx) : screen(p, time, ctx),
-      p.keyboard > 0 && parts.keyboard(p.keyboard, time),
-      arm('L', p.armL),
-      arm('R', p.armR),
-      p.sweat > 0.01 && parts.sweat(p.sweat, time, ctx),
-    ),
+    h('g', { transform: body }, c.skeleton ? robot(p, time, ctx) : c.body({ pose: p, time, id: ctx.id, url: ctx.url, h })),
     h(
       'g',
       { transform: `${fx} translate(0 ${c.effectsOffsetY})` },

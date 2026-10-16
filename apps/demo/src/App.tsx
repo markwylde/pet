@@ -1,4 +1,4 @@
-import { ANIMATION_GROUPS, Biscuit, Pixel, Rack, type AnimationName, type Character, type ChatOptions, type PetInstance } from '@markwylde/pet'
+import { ANIMATION_GROUPS, Biscuit, Pixel, Rack, Whiskers, type AnimationName, type Character, type ChatOptions, type PetInstance } from '@markwylde/pet'
 import { Pet, PetIcon } from '@markwylde/pet/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { mockAssistant } from './chat/mockAssistant'
@@ -8,8 +8,7 @@ const STATUS_BAR_H = 44
 const HIDE_AFTER = 10_000
 const INSETS = { bottom: STATUS_BAR_H }
 
-const CHARACTERS: Record<string, Character> = { pixel: Pixel, rack: Rack, biscuit: Biscuit }
-const TITLES: Record<string, string> = { pixel: 'Terminal', rack: 'Server', biscuit: 'Dog' }
+const CHARACTERS: Record<string, Character> = { pixel: Pixel, rack: Rack, biscuit: Biscuit, whiskers: Whiskers }
 const isCharacterKey = (v: unknown): v is string => typeof v === 'string' && v in CHARACTERS
 
 const CHAT: ChatOptions = {
@@ -63,7 +62,7 @@ export default function App() {
       <aside className="panel">
         <header>
           <h1>
-            {character.name} the {TITLES[characterKey]}
+            {character.name} the {character.kind.replace(/\b\w/g, (c) => c.toUpperCase())}
           </h1>
           <p>Click me to chat. Drag me around, drag fast to go turbo. Leave me alone and I'll nap in the tray.</p>
           <p className="hint">
