@@ -1,5 +1,6 @@
 import { createContext, useContext, useId, type ReactNode } from 'react'
 import { CHARACTERS, type CharacterId, type Rig } from './characters'
+import { MatrixBlush, MatrixBrows, MatrixEye, MatrixGrid, MatrixMouth } from './matrixFace'
 import type { EyeShape, Pose } from './pose'
 
 // Face colours come from the character, so the same face works on any screen.
@@ -174,27 +175,55 @@ function Screen({ p, t }: { p: Pose; t: number }) {
   const { PHOSPHOR } = usePhosphor()
   const jitter = p.glitch > 0 ? Math.sin(t * 91) * 4 * p.glitch : 0
   const hideMouth = p.progress >= 0 || p.code > 0 || p.spinner > 0
+  const matrix = rig.face === 'matrix'
   return (
     <g clipPath="url(#pet-screen-clip)">
       <rect x={SCREEN.x} y={SCREEN.y} width={SCREEN.w} height={SCREEN.h} fill={`url(#pet-screen-${rig.id})`} />
+      {matrix && <MatrixGrid id={`pet-matrix-${rig.id}`} color={PHOSPHOR} x={SCREEN.x} y={SCREEN.y} w={SCREEN.w} h={SCREEN.h} />}
       <g transform={`translate(${jitter} 0)`} filter="url(#pet-glow)">
-        {p.blush > 0.01 && (
-          <g fill={PINK} opacity={p.blush * 0.55}>
-            <ellipse cx={-29} cy={-82} rx={7} ry={4} />
-            <ellipse cx={29} cy={-82} rx={7} ry={4} />
-          </g>
+        {matrix ? (
+          <>
+            {p.blush > 0.01 && <MatrixBlush k={p.blush} pink={PINK} />}
+            {(['L', 'R'] as const).map((side) => (
+              <MatrixEye
+                key={side}
+                cx={(side === 'L' ? -EYE_DX : EYE_DX) + p.lookX}
+                cy={EYE_Y + p.lookY}
+                shape={p.eye}
+                open={p.eyeOpen}
+                side={side}
+                t={t}
+                lookX={p.lookX}
+                color={PHOSPHOR}
+                pink={PINK}
+              />
+            ))}
+            {p.brow > 0.02 && <MatrixBrows k={p.brow} lx={p.lookX} ly={p.lookY} eyeY={EYE_Y} eyeDx={EYE_DX} color={PHOSPHOR} />}
+            {!hideMouth && (
+              <MatrixMouth curve={p.mouthCurve} open={p.mouthOpen} width={p.mouthWidth} dx={p.lookX * 0.5} y={MOUTH_Y + p.lookY * 0.4} color={PHOSPHOR} pink={PINK} />
+            )}
+          </>
+        ) : (
+          <>
+            {p.blush > 0.01 && (
+              <g fill={PINK} opacity={p.blush * 0.55}>
+                <ellipse cx={-29} cy={-82} rx={7} ry={4} />
+                <ellipse cx={29} cy={-82} rx={7} ry={4} />
+              </g>
+            )}
+            <Eye cx={-EYE_DX + p.lookX} cy={EYE_Y + p.lookY} shape={p.eye} open={p.eyeOpen} side="L" t={t} />
+            <Eye cx={EYE_DX + p.lookX} cy={EYE_Y + p.lookY} shape={p.eye} open={p.eyeOpen} side="R" t={t} />
+            {p.brow > 0.02 && <Brows k={p.brow} lx={p.lookX} ly={p.lookY} />}
+            {!hideMouth && <Mouth curve={p.mouthCurve} open={p.mouthOpen} width={p.mouthWidth} dx={p.lookX * 0.5} dy={p.lookY * 0.4} />}
+          </>
         )}
-        <Eye cx={-EYE_DX + p.lookX} cy={EYE_Y + p.lookY} shape={p.eye} open={p.eyeOpen} side="L" t={t} />
-        <Eye cx={EYE_DX + p.lookX} cy={EYE_Y + p.lookY} shape={p.eye} open={p.eyeOpen} side="R" t={t} />
-        {p.brow > 0.02 && <Brows k={p.brow} lx={p.lookX} ly={p.lookY} />}
-        {!hideMouth && <Mouth curve={p.mouthCurve} open={p.mouthOpen} width={p.mouthWidth} dx={p.lookX * 0.5} dy={p.lookY * 0.4} />}
         {p.progress >= 0 && <ProgressBar k={p.progress} />}
         {p.code > 0 && <Code t={p.code} />}
         {p.spinner > 0 && <Spinner t={p.spinner} />}
         {p.tears > 0.01 && <Tears k={p.tears} t={t} lx={p.lookX} />}
       </g>
       {p.glitch > 0 && <rect x={SCREEN.x} y={-100 + Math.sin(t * 53) * 25} width={SCREEN.w} height={5} fill={PHOSPHOR} opacity={0.25 * p.glitch} />}
-      <rect x={SCREEN.x} y={SCREEN.y} width={SCREEN.w} height={SCREEN.h} fill="url(#pet-scan)" />
+      {!matrix && <rect x={SCREEN.x} y={SCREEN.y} width={SCREEN.w} height={SCREEN.h} fill="url(#pet-scan)" />}
       <rect x={SCREEN.x} y={SCREEN.y} width={SCREEN.w} height={SCREEN.h} fill="#000" opacity={(1 - p.screen) * 0.85} />
       <path d={`M ${SCREEN.x + 4} ${SCREEN.y + 30} Q ${SCREEN.x + 6} ${SCREEN.y + 5} ${SCREEN.x + 34} ${SCREEN.y + 4} L ${SCREEN.x + 50} ${SCREEN.y + 4} Q ${SCREEN.x + 14} ${SCREEN.y + 10} ${SCREEN.x + 4} ${SCREEN.y + 30} Z`} fill="url(#pet-glass)" />
     </g>

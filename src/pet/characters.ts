@@ -21,6 +21,7 @@ export interface Rig {
   name: string
   kind: string // "desktop terminal", used in copy
   palette: Palette
+  face: 'crt' | 'matrix' // smooth phosphor face, or an LED dot-matrix one
   shoulder: { x: number; y: number }
   antenna: { x: number; y: number }
   sweat: { x: number; y: number }
@@ -37,6 +38,7 @@ const terminal: Rig = {
   name: 'Pixel',
   kind: 'desktop terminal',
   palette: { phosphor: '#62ffb0', phosphorDim: '#2f9e6a', screenInner: '#14432d', screenOuter: '#06180f' },
+  face: 'crt',
   shoulder: { x: 57, y: -82 },
   antenna: { x: 14, y: -141 },
   sweat: { x: 52, y: -128 },
@@ -51,6 +53,7 @@ const server: Rig = {
   name: 'Rack',
   kind: 'little home server',
   palette: { phosphor: '#7cd4ff', phosphorDim: '#3a86b0', screenInner: '#103252', screenOuter: '#050f1c' },
+  face: 'matrix',
   shoulder: { x: 52, y: -96 },
   antenna: { x: 14, y: -174 },
   sweat: { x: 48, y: -170 },
