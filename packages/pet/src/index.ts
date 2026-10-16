@@ -1,5 +1,5 @@
 /**
- * @markwylde/pet: little animated desktop pets for the web, in the spirit of Microsoft Agent.
+ * @markwylde/pet: little animated pets for web apps, desktop apps and websites.
  *
  * @example
  * import Pet, { Pixel } from '@markwylde/pet'

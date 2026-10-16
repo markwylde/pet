@@ -1,7 +1,7 @@
 # @markwylde/pet
 
-Little animated desktop pets for the web, in the spirit of Microsoft Agent (Clippy's family).
-Drop one on any page: it idles, blinks, flies around when you drag it, naps in a dock when
+Little animated pets for your apps: web apps, desktop apps built on web tech (Electron, Tauri)
+and plain websites. Drop one in: it idles, blinks, flies around when you drag it, naps in a dock when
 you leave it alone, and chats with you through any AI backend you plug in.
 
 - **Zero dependencies.** Plain DOM + SVG, works with any framework (or none). Optional React bindings.

@@ -1,6 +1,6 @@
 # pet
 
-Little animated desktop pets for the web, in the spirit of Microsoft Agent.
+Little animated pets for your apps: web apps, desktop apps (Electron, Tauri) and websites.
 
 | Path | What |
 | ---- | ---- |

@@ -476,7 +476,7 @@ const hash = (n: number) => {
 }
 
 /**
- * Agent-style lip flap: a stream of syllables, each with its own mouth shape —
+ * Lip flap: a stream of syllables, each with its own mouth shape —
  * wide "ah", round "oh", small "eh" — plus the odd closed "m" and a breath between phrases.
  */
 const SYLLABLES_PER_SEC = 5

@@ -50,7 +50,7 @@ const pick = <T>(list: readonly T[], not?: T): T => {
 }
 
 /**
- * Like Microsoft Agent's idle levels: mostly the quiet resting loop, an occasional
+ * Escalating idle levels: mostly the quiet resting loop, an occasional
  * glance once nobody has interacted for a bit, and dozing only after a long while.
  */
 function nextIdle(idleFor: number, autoHide: boolean): AnimationName {

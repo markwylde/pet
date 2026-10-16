@@ -9,7 +9,7 @@ export const SNIPPETS: Snippet[] = [
   {
     id: 'vanilla',
     label: 'Vanilla',
-    note: 'Any page, any framework.',
+    note: 'Any app, any framework.',
     code: `import Pet, { Pixel } from '@markwylde/pet'
 
 const pet = Pet({ character: Pixel, size: 0.8 })

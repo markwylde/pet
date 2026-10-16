@@ -1,8 +1,8 @@
 {
   "name": "@markwylde/pet",
   "version": "0.1.0",
-  "description": "Little animated desktop pets for the web, in the spirit of Microsoft Agent. Draggable, chatty, zero dependencies.",
-  "keywords": ["pet", "mascot", "assistant", "clippy", "microsoft-agent", "animation", "svg", "chat", "react"],
+  "description": "Little animated pets for web apps, desktop apps and websites. Draggable, chatty, zero dependencies.",
+  "keywords": ["pet", "mascot", "assistant", "companion", "animation", "svg", "chat", "ai", "electron", "tauri", "react"],
   "author": "Mark Wylde <me@markwylde.com>",
   "license": "MIT",
   "type": "module",
