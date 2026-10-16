@@ -1,25 +1,9 @@
-import type { AnimationName } from '../pet/animations'
-
-export interface ChatMessage {
-  id: number
-  role: 'user' | 'assistant'
-  text: string
-}
-
-export type AssistantEvent =
-  | { type: 'mood'; mood: AnimationName } // how the pet should feel once the reply is done
-  | { type: 'text'; delta: string } // next chunk of the reply
+import type { AnimationName, Assistant } from '@markwylde/pet'
 
 /**
- * Streams a reply for the conversation so far. Swap this for a real model call later;
- * the chat only depends on this shape. Must stop (throwing an AbortError) when `signal` aborts.
+ * A pretend assistant that matches keywords and streams a canned answer word by word.
+ * Swap it for one that calls your backend — see the library README.
  */
-export interface Persona {
-  name: string
-  kind: string
-}
-
-export type Assistant = (history: ChatMessage[], signal: AbortSignal, persona: Persona) => AsyncIterable<AssistantEvent>
 
 interface Rule {
   match: RegExp
@@ -48,26 +32,30 @@ const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)]
 
 function sleep(ms: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
-    if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'))
+    if (signal.aborted) return reject(signal.reason)
     const id = setTimeout(resolve, ms)
-    signal.addEventListener('abort', () => {
-      clearTimeout(id)
-      reject(new DOMException('Aborted', 'AbortError'))
-    }, { once: true })
+    signal.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(id)
+        reject(signal.reason)
+      },
+      { once: true },
+    )
   })
 }
 
-export const mockAssistant: Assistant = async function* (history, signal, persona) {
-  const last = [...history].reverse().find((m) => m.role === 'user')?.text ?? ''
+export const mockAssistant: Assistant = async function* (messages, { signal, character }) {
+  const last = [...messages].reverse().find((m) => m.role === 'user')?.text ?? ''
   const rule = RULES.find((r) => r.match.test(last))
-  const text = (rule ? pick(rule.replies) : pick(FALLBACK)).replaceAll('{name}', persona.name).replaceAll('{kind}', persona.kind)
+  const text = (rule ? pick(rule.replies) : pick(FALLBACK)).replaceAll('{name}', character.name).replaceAll('{kind}', character.kind)
 
   await sleep(700 + Math.random() * 900, signal) // "thinking"
-  yield { type: 'mood', mood: rule?.mood ?? 'idle2' }
+  yield { mood: rule?.mood ?? 'idle2' }
 
   // stream word by word, pausing a little longer after punctuation
   for (const word of text.split(/(?<=\s)/)) {
-    yield { type: 'text', delta: word }
+    yield word
     await sleep(/[.!?…]\s*$/.test(word) ? 260 : /[,:;]\s*$/.test(word) ? 140 : 45 + Math.random() * 45, signal)
   }
 }

@@ -1,6 +1,7 @@
-import type { Pose } from './pose'
+import type { Pose } from './pose.js'
 
-export type AnimationName =
+/** Names of the animations every character ships with. */
+export type BuiltInAnimation =
   | 'idle1'
   | 'idle2'
   | 'idle3'
@@ -19,21 +20,52 @@ export type AnimationName =
   | 'hide'
   | 'show'
 
+/**
+ * Any animation name: a built-in one, or one you registered through the `animations` option.
+ * (The `string & {}` keeps editor autocomplete for the built-ins.)
+ */
+export type AnimationName = BuiltInAnimation | (string & {})
+
+/**
+ * Animation groups. `pet.play('happy')` picks a random animation from a group.
+ * `system` animations (hide/show) are used internally and never picked at random.
+ */
 export type Category = 'idle' | 'happy' | 'sad' | 'busy' | 'flying' | 'talk' | 'system'
 
+/** Extra input for poses that react to movement (the flying animations lean into it). */
 export interface MotionContext {
-  vx: number // px/s, horizontal drag velocity
+  /** Horizontal velocity in px/s. */
+  vx: number
+  /** Vertical velocity in px/s. */
   vy: number
 }
 
-export interface AnimationDef {
+/**
+ * An animation is a pure function of time: given `t` seconds since it started, return the
+ * parts of the {@link Pose} that differ from the resting pose. The renderer does the rest,
+ * and blends smoothly between animations.
+ *
+ * @example
+ * const wiggle: Animation = {
+ *   name: 'wiggle',
+ *   category: 'happy',
+ *   duration: 1.2,
+ *   pose: (t) => ({ rot: motion.wave(t, 3, 10), mouthOpen: 0.4 }),
+ * }
+ */
+export interface Animation {
   name: AnimationName
-  label: string
   category: Category
-  duration: number // seconds for one play-through
+  /** Seconds for one play-through. */
+  duration: number
+  /** Human-friendly label, e.g. for buttons. */
+  label?: string
+  /** Lines the pet may say (in a speech bubble) when this is played with `speech: true`. */
   speech?: string[]
   pose: (t: number, ctx: MotionContext) => Partial<Pose>
 }
+
+type AnimationDef = Animation
 
 // ---------- helpers ----------
 
@@ -57,6 +89,22 @@ function blink(t: number, at: number[], len = 0.16): number {
 }
 
 const wave = (t: number, freq: number, amp = 1, phase = 0) => Math.sin(t * TAU * freq + phase) * amp
+
+/** Small helpers for writing your own animations. All take `t` in seconds. */
+export const motion = {
+  /** Sine wave: `freq` in Hz, `amp` peak value. */
+  wave,
+  /** Eye openness (0…1) with quick blinks at the given times. */
+  blink,
+  /** Eased 0 → 1 progress of `t` through `[a, b]`. */
+  seg,
+  /** Ramps 0 → 1 over `[a, a + fade]`, holds, then back to 0 over `[b - fade, b]`. */
+  window: window_,
+  /** Clamp to `[a, b]` (default 0…1). */
+  clamp,
+  /** Ease-in-out curve for 0…1 input. */
+  easeInOut,
+}
 
 // ---------- animations ----------
 
@@ -518,7 +566,8 @@ const show: AnimationDef = {
   },
 }
 
-export const ANIMATIONS: Record<AnimationName, AnimationDef> = {
+/** Every built-in animation, keyed by name. */
+export const ANIMATIONS: Record<BuiltInAnimation, Animation> = {
   idle1,
   idle2,
   idle3,
@@ -538,13 +587,12 @@ export const ANIMATIONS: Record<AnimationName, AnimationDef> = {
   show,
 }
 
-export const IDLES: AnimationName[] = ['idle1', 'idle2', 'idle3']
-
-export const CATEGORIES: { key: Category; title: string; names: AnimationName[] }[] = [
-  { key: 'idle', title: 'Idle', names: ['idle1', 'idle2', 'idle3'] },
-  { key: 'happy', title: 'Happy', names: ['happy1', 'happy2', 'happy3'] },
-  { key: 'sad', title: 'Sad', names: ['sad1', 'sad2', 'sad3'] },
-  { key: 'busy', title: 'Busy', names: ['busy1', 'busy2', 'busy3'] },
-  { key: 'flying', title: 'Flying', names: ['flying-slow', 'flying-fast'] },
-  { key: 'talk', title: 'Talk', names: ['talk'] },
+/** The animations users normally play, grouped by category (handy for building a UI). */
+export const ANIMATION_GROUPS: { category: Exclude<Category, 'system'>; names: BuiltInAnimation[] }[] = [
+  { category: 'idle', names: ['idle1', 'idle2', 'idle3'] },
+  { category: 'happy', names: ['happy1', 'happy2', 'happy3'] },
+  { category: 'sad', names: ['sad1', 'sad2', 'sad3'] },
+  { category: 'busy', names: ['busy1', 'busy2', 'busy3'] },
+  { category: 'flying', names: ['flying-slow', 'flying-fast'] },
+  { category: 'talk', names: ['talk'] },
 ]
