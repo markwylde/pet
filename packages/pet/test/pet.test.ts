@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import Pet, { Pixel, Rack, defineCharacter, renderIcon, type Assistant, type PetInstance } from '../src/index.js'
+import { BASE_POSE, type EyeShape, type Pose } from '../src/pose.js'
+import Pet, { Pixel, Rack, Whiskers, characters, defineCharacter, renderIcon, type Assistant, type PetInstance } from '../src/index.js'
 
 let pets: PetInstance[] = []
 const make = (...args: Parameters<typeof Pet>) => {
@@ -238,5 +239,61 @@ describe('characters', () => {
     const svg = renderIcon(Rack, { title: 'Rack' })
     expect(svg.startsWith('<svg')).toBe(true)
     expect(svg).toContain('aria-label="Rack"')
+  })
+
+  it('lets a character draw itself without the robot skeleton', () => {
+    const body = vi.fn(({ h }) => h('circle', { r: 20, fill: '#123456' }))
+    const blob = defineCharacter({ id: 'blob', name: 'Blob', skeleton: false, palette: Pixel.palette, body })
+    expect(Pixel.skeleton).toBe(true)
+    const svg = renderIcon(blob, { pose: { propeller: 2, flame: 1, keyboard: 1, progress: 0.5, code: 1, armR: 120, hearts: 0.5 } })
+    expect(body.mock.calls[0][0].pose.armR).toBe(120)
+    expect(svg).toContain('#123456')
+    expect(svg).not.toContain('#4fb3ff') // propeller hat
+    expect(svg).not.toMatch(/fill="url\(#[^)]*-flame\)"/)
+    expect(svg).not.toContain('#a8977a') // keyboard
+    expect(svg).not.toContain('>50%<') // progress bar
+    expect(svg).not.toContain('clip-path')
+    expect(svg).not.toContain(Pixel.limbs.line)
+    expect(svg).toContain('#ff6f9b') // hearts still float above
+  })
+})
+
+describe('Whiskers', () => {
+  const draw = (pose: Partial<Pose> = {}, time = 0) =>
+    Whiskers.body({ pose: { ...BASE_POSE, ...pose }, time, id: (n) => `w-${n}`, url: (n) => `url(#w-${n})`, h: (() => '') as never })
+  const tail = (svg: string) => svg.match(/<path d="M 18 -24[^"]*"/)![0]
+
+  it('ships as a self-drawn cat', () => {
+    expect(characters.Whiskers).toBe(Whiskers)
+    expect(Whiskers).toMatchObject({ id: 'whiskers', name: 'Whiskers', kind: 'cartoon cat', skeleton: false })
+    const pet = make({ character: Whiskers })
+    expect(pet.character).toBe(Whiskers)
+    expect(pet.element.querySelector('.mwpet-body')!.getAttribute('aria-label')).toContain('Whiskers')
+    expect(renderIcon(Whiskers, { title: 'Whiskers' })).toContain('aria-label="Whiskers"')
+  })
+
+  it('draws a different look for every eye shape', () => {
+    const shapes: EyeShape[] = ['open', 'happy', 'closed', 'heart', 'x', 'squint', 'spiral', 'wide']
+    expect(new Set(shapes.map((eye) => draw({ eye }))).size).toBe(shapes.length)
+  })
+
+  it('talks, cries, twitches its ears and waves', () => {
+    expect(draw({ mouthOpen: 1 })).not.toBe(draw({ mouthOpen: 0 }))
+    expect(draw({ tears: 1 })).toContain('#8fdcff')
+    expect(draw({ antenna: 20 })).not.toBe(draw({ antenna: 0 }))
+    expect(draw({ armR: 140 })).not.toBe(draw())
+    expect(draw({ legL: 8 })).not.toBe(draw())
+  })
+
+  it('swishes its tail, faster when busy', () => {
+    expect(tail(draw({}, 0.3))).not.toBe(tail(draw({}, 1.1)))
+    expect(tail(draw({ code: 1 }, 0.3))).not.toBe(tail(draw({}, 0.3)))
+  })
+
+  it('flies without robot props', () => {
+    const svg = renderIcon(Whiskers, { pose: { propeller: 3, flame: 1, keyboard: 1 } })
+    expect(svg).not.toContain('#4fb3ff')
+    expect(svg).not.toContain('#a8977a')
+    expect(tail(draw({ propeller: 1 }))).not.toBe(tail(draw()))
   })
 })

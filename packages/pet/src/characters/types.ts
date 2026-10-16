@@ -40,6 +40,13 @@ export interface Character {
   kind: string
   /** `crt`: smooth glowing strokes. `matrix`: an LED dot-matrix face. */
   face: 'crt' | 'matrix'
+  /**
+   * `true` (default): the library draws the shared robot skeleton (screen face, arms, legs,
+   * antenna and props) around your body. `false`: `body` draws the whole figure from the
+   * pose; only the body motion, shadow, speed lines and the effects above the head are added.
+   * `face`, `palette`, `limbs` and `anchors` are ignored then.
+   */
+  skeleton: boolean
   palette: {
     /** Colour of the face. */
     phosphor: string
@@ -70,11 +77,11 @@ export interface Character {
   effectsOffsetY: number
   /** viewBox that frames the character snugly, used by {@link renderIcon}. */
   iconViewBox: string
-  /** Draws the body behind the screen. Return SVG markup. */
+  /** Draws the body behind the screen (or, with `skeleton: false`, the whole figure). Return SVG markup. */
   body: (ctx: BodyContext) => string
 }
 
-type Simple = 'kind' | 'face' | 'effectsOffsetY' | 'iconViewBox'
+type Simple = 'kind' | 'face' | 'skeleton' | 'effectsOffsetY' | 'iconViewBox'
 
 /**
  * What you pass to {@link defineCharacter}: a {@link Character} where everything with a

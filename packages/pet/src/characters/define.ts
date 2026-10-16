@@ -32,6 +32,7 @@ export function defineCharacter(input: CharacterInput): Character {
   return {
     kind: 'desktop pet',
     face: 'crt',
+    skeleton: true,
     effectsOffsetY: 0,
     iconViewBox: '-72 -168 144 172',
     ...input,

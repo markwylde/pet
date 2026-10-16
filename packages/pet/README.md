@@ -5,7 +5,7 @@ and plain websites. Drop one in: it idles, blinks, flies around when you drag it
 you leave it alone, and chats with you through any AI backend you plug in.
 
 - **Zero dependencies.** Plain DOM + SVG, works with any framework (or none). Optional React bindings.
-- **Characters.** Ships with **Pixel** (a beige CRT terminal) and **Rack** (a home server with an LED face). Define your own.
+- **Characters.** Ships with **Pixel** (a beige CRT terminal), **Rack** (a home server with an LED face) and **Whiskers** (a ginger cartoon cat). Define your own.
 - **17 animations** (idle, happy, sad, busy, flying, talking…) that blend smoothly into each other, plus your own.
 - **Promise-based actions.** `await pet.moveTo('center'); await pet.play('happy'); await pet.say('Hi!')`
 - **Chat balloon** with streaming replies: the pet thinks, then talks while the text arrives.
@@ -45,7 +45,7 @@ The package is ESM-only and runs in the browser. React is an optional peer depen
 import Pet, { Rack } from '@markwylde/pet'
 
 const pet = Pet({
-  character: Rack, // or Pixel (the default)
+  character: Rack, // or Whiskers, or Pixel (the default)
   size: 1, // 1 = 180 × 220 px
   position: 'bottom-right',
 })
@@ -242,7 +242,7 @@ pet.play('dance', { speech: true })
 
 ### Custom characters
 
-Every character shares one skeleton (screen face, arms, legs, antenna, effects), so a
+By default every character shares one skeleton (screen face, arms, legs, antenna, effects), so a
 character only needs colours, attachment points and a body drawn behind the screen:
 
 ```ts
@@ -268,6 +268,26 @@ is the rectangle x −42…42, y −124…−58, so draw a bezel around x −47�
 function runs every frame and gets the current `pose` and `time`, so it can animate (Rack's
 drive lights do). It also gets `id()` / `url()` to namespace gradient ids. `limbs`, `anchors`,
 `effectsOffsetY` and `iconViewBox` all have defaults matching Pixel's proportions.
+
+**Drawing everything yourself:** set `skeleton: false` and the library skips the robot parts
+(screen, arms, legs, antenna, propeller, flames, keyboard). Your `body` function draws the
+whole figure from the pose: `pose.armL`/`armR` are arm angles, `legL`/`legR` are foot lifts,
+`pose.eye` and `pose.mouthOpen` drive the face, and so on (see [the pose](#the-pose)). Body motion, the
+shadow and the effects above the head (hearts, zzz, rain cloud) still apply. Whiskers is
+built this way.
+
+```ts
+const Blob = defineCharacter({
+  id: 'blob',
+  name: 'Blob',
+  skeleton: false,
+  palette: { phosphor: '#000', phosphorDim: '#000', screenInner: '#000', screenOuter: '#000' }, // required, unused here
+  body: ({ h, pose }) =>
+    h('ellipse', { cx: 0, cy: -50, rx: 45, ry: 50, fill: '#7dd3fc' }) +
+    h('circle', { cx: -14 + pose.lookX, cy: -60, r: 5 * pose.eyeOpen, fill: '#0c4a6e' }) +
+    h('circle', { cx: 14 + pose.lookX, cy: -60, r: 5 * pose.eyeOpen, fill: '#0c4a6e' }),
+})
+```
 
 ## API reference
 
@@ -361,7 +381,7 @@ has finished), `stop()`, `clear()`.
 
 | Export                  | Description                                                                      |
 | ----------------------- | -------------------------------------------------------------------------------- |
-| `Pixel`, `Rack`, `characters` | Built-in characters.                                                       |
+| `Pixel`, `Rack`, `Whiskers`, `characters` | Built-in characters.                                           |
 | `defineCharacter(input)`| Create a character with defaults filled in.                                      |
 | `renderIcon(character, { pose?, viewBox?, title? })` | A static `<svg>` string of a character.             |
 | `STAGE_VIEWBOX`         | The viewBox the live pet uses, with room above for effects. Pass it to `renderIcon` to include hearts, clouds etc. |

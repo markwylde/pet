@@ -83,6 +83,23 @@ function screen(p: Pose, t: number, ctx: RenderContext): string {
   )
 }
 
+/** The shared skeleton (limbs, antenna, screen, props) around the character's body. */
+function robot(p: Pose, time: number, ctx: RenderContext): string {
+  return [
+    p.flame > 0 && parts.flame(time, p.flame, ctx),
+    parts.legs(p.legL, p.legR, ctx),
+    parts.antenna(p.antenna, p.propeller, time, ctx),
+    ctx.character.body({ pose: p, time, id: ctx.id, url: ctx.url, h }),
+    screen(p, time, ctx),
+    p.keyboard > 0 && parts.keyboard(p.keyboard, time),
+    parts.arm('L', p.armL, ctx),
+    parts.arm('R', p.armR, ctx),
+    p.sweat > 0.01 && parts.sweat(p.sweat, time, ctx),
+  ]
+    .filter(Boolean)
+    .join('')
+}
+
 /** Inner SVG markup for one frame. */
 export function renderFrame(p: Pose, time: number, ctx: RenderContext): string {
   const c = ctx.character
@@ -94,19 +111,7 @@ export function renderFrame(p: Pose, time: number, ctx: RenderContext): string {
     defs(ctx),
     h('ellipse', { cx: p.x, cy: 6, rx: 44 * shadow, ry: 7 * shadow, fill: 'rgba(0,0,0,0.22)' }),
     p.speedLines > 0 && parts.speedLines(time, p.speedAngle, p.speedLines, fx),
-    h(
-      'g',
-      { transform: body },
-      p.flame > 0 && parts.flame(time, p.flame, ctx),
-      parts.legs(p.legL, p.legR, ctx),
-      parts.antenna(p.antenna, p.propeller, time, ctx),
-      c.body({ pose: p, time, id: ctx.id, url: ctx.url, h }),
-      screen(p, time, ctx),
-      p.keyboard > 0 && parts.keyboard(p.keyboard, time),
-      parts.arm('L', p.armL, ctx),
-      parts.arm('R', p.armR, ctx),
-      p.sweat > 0.01 && parts.sweat(p.sweat, time, ctx),
-    ),
+    h('g', { transform: body }, c.skeleton ? robot(p, time, ctx) : c.body({ pose: p, time, id: ctx.id, url: ctx.url, h })),
     h(
       'g',
       { transform: `${fx} translate(0 ${c.effectsOffsetY})` },
