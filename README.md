@@ -19,7 +19,7 @@ npm run lint
 
 ## Publishing
 
-Published to GitHub Packages by `.github/workflows/publish.yml` whenever a `v*` tag is pushed. Bump the version in `packages/pet/package.json`, commit, then:
+Published to npmjs and GitHub Packages by `.github/workflows/publish.yml` whenever a `v*` tag is pushed. The npmjs release is staged: approve it with `npm stage approve @markwylde/pet@<version>` (or on npmjs.com) before it goes live. Bump the version in `packages/pet/package.json`, commit, then:
 
 ```sh
 git tag v0.1.1 && git push origin v0.1.1
