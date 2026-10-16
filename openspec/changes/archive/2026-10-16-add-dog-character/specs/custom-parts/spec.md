@@ -1,6 +1,6 @@
 ## Purpose
 
-Lets a character replace or hide the robot skeleton parts the library draws for every character (stick arms, shoe feet, antenna, propeller hat and rocket flames), so characters that aren't robots can bring their own anatomy.
+Lets a character that keeps the shared skeleton replace or hide individual robot parts (stick arms, shoe feet, antenna, propeller hat and rocket flames), so characters that aren't robots can bring their own anatomy while the library still draws the rest. Characters with `skeleton: false` draw everything themselves and ignore these options.
 
 ## ADDED Requirements
 

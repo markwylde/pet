@@ -53,7 +53,7 @@ The alternative was a separate `screen?: boolean`. It would allow nonsense combi
   Renaming them would break custom characters, so instead `types.ts` and the README document the toon meanings.
 
 **3. Screen overlays go in a thought bubble.**
-`parts.thoughtBubble(content, ctx)` draws a cloud with two trailing puffs. It is centred at (0, −178 + `effectsOffsetY`) and clamped so its top stays below −245. Inside it, `progressBar`, `code` and `spinner` are translated from screen-centre coordinates (about y −91) to the bubble centre. For toon characters, gears move to x +34 so they don't collide with it.
+`parts.thoughtBubble(content, offsetY, ctx)` draws a cloud with two trailing puffs. It is centred at (−30, −178 + `effectsOffsetY`), off to the left so it clears the gears, and clamped so its top stays below −245. Inside it, `progressBar`, `code` and `spinner` are translated from screen-centre coordinates (about y −91) to the bubble centre. For toon characters, gears move right by 56 so they don't collide with it.
 
 Rejected alternatives:
 - A held tablet: it fights the animated arms.

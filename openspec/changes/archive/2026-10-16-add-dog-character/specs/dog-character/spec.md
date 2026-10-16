@@ -52,7 +52,7 @@ Biscuit's tail SHALL swing back and forth over time. Its wag frequency SHALL be 
 - **THEN** the tail hangs lower and swings through a smaller angle than at idle
 
 ### Requirement: Biscuit appears in the demo and the site
-The demo app's character picker SHALL offer Biscuit, and the demo heading SHALL show each character's name and kind correctly for all three built-ins. The landing site's crew list and footer SHALL include Biscuit.
+The demo app's character picker SHALL offer Biscuit, and the demo heading SHALL show each character's name and kind correctly for every built-in. The landing site's crew list and footer SHALL include Biscuit.
 
 #### Scenario: Pick Biscuit in the demo
 - **WHEN** a user selects Biscuit in the demo's character picker

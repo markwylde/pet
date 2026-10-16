@@ -1,8 +1,10 @@
+# toon-face Specification
+
 ## Purpose
 
-Defines the screenless `toon` face kind: a cartoon face inked straight onto a character's body, and how screen-only effects behave when there is no screen.
+Defines the screenless `toon` face kind: a cartoon face inked straight onto the body of a character that keeps the shared skeleton, and how screen-only effects behave when there is no screen.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Characters can choose a toon face
 A character SHALL accept `face: 'toon'` in addition to `'crt'` and `'matrix'`. A toon character SHALL be drawn without a screen panel, screen gradient, scanlines, LED grid or glass highlight. The face SHALL be drawn in the character's `palette.phosphor` colour as ink, directly over the body.
