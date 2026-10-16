@@ -81,7 +81,7 @@ export function App() {
 - `<Pet>` renders nothing in place. The pet lives in a fixed layer over the page. Its props are the
   [options](#options) plus one `on…` prop per [event](#events): `onClick`, `onAnimationstart`,
   `onAnimationend`, `onShow`, `onHide`, `onDragstart`, `onDragend`, `onMove`, `onChatOpen`,
-  `onChatClose`, `onChatMessage`.
+  `onChatClose`, `onChatMessage`, `onChatAction`.
 - Changing an [updatable option](#petsetoptions) such as `size`, `character` or `chat` applies it
   live. Other options are read once, on mount.
 - `usePet(options)` is the hook version. It returns the instance, or `null` before mount.
@@ -148,6 +148,46 @@ become a friendly message and a sad face.
 
 You can also drive the chat from code: `pet.chat.open()`, `pet.chat.send('hi')`,
 `pet.chat.stop()`, `pet.chat.clear()`, `pet.chat.messages`.
+
+#### When the conversation lives somewhere else
+
+If the conversation is kept by your server (say, one conversation shared by several windows), pass
+`onSend` instead of `assistant`. The chat then keeps no history of its own: sending calls your
+`onSend`, Stop and Clear call `onStop` and `onClear`, and you show the conversation with
+`chat.setMessages()` and `chat.setStatus()`:
+
+```ts
+const pet = Pet({
+  chat: {
+    onSend: (text) => server.send(text),
+    onStop: () => server.stop(),
+    onClear: () => server.clear(),
+  },
+})
+
+server.on('changed', ({ messages, status }) => {
+  pet.chat.setMessages(messages) // replaces what's shown; a growing last reply updates in place
+  pet.chat.setStatus(status) // 'thinking' | 'streaming' | 'idle', with the matching animation
+})
+```
+
+A message can carry buttons. Pressing one emits `chat:action`:
+
+```ts
+pet.chat.setMessages([
+  {
+    id: 'q1',
+    role: 'assistant',
+    text: 'May I run `npm test` in api?',
+    createdAt: Date.now(),
+    actions: [
+      { id: 'allow', label: 'Allow', kind: 'primary' },
+      { id: 'decline', label: 'Decline', kind: 'danger' },
+    ],
+  },
+])
+pet.on('chat:action', ({ message, action }) => server.answer(message.id, action.id))
+```
 
 ### Docking and auto-hide
 
@@ -339,7 +379,9 @@ on the client (e.g. in `useEffect`), or use the React bindings.
 
 | Option              | Type             | Default                          | Description                                   |
 | ------------------- | ---------------- | -------------------------------- | --------------------------------------------- |
-| `assistant`         | `Assistant`      | required                         | Produces replies (see [Chat and AI](#chat-and-ai)). |
+| `assistant`         | `Assistant`      | required unless `onSend`         | Produces replies (see [Chat and AI](#chat-and-ai)). |
+| `onSend`            | `(text) => void` | none                             | Take over the conversation ([details](#when-the-conversation-lives-somewhere-else)). |
+| `onStop` / `onClear`| `() => void`     | none                             | With `onSend`: Stop / Clear were pressed.     |
 | `title`             | `string`         | character name                   | Header title.                                 |
 | `greeting`          | `string`         | "Hi! I'm {name}. Ask me anything." | Shown while the conversation is empty.      |
 | `suggestions`       | `string[]`       | `[]`                             | Quick-reply chips for an empty conversation.  |
@@ -376,7 +418,11 @@ on the client (e.g. in `useEffect`), or use the React bindings.
 ### `PetChat`
 
 `isOpen`, `busy`, `messages`, `open()`, `close()`, `toggle()`, `send(text)` (resolves when the reply
-has finished), `stop()`, `clear()`.
+has finished), `stop()`, `clear()`, and for an `onSend` host `setMessages(messages)` and
+`setStatus('idle' | 'thinking' | 'streaming')`.
+
+A `ChatMessage` is `{ id, role: 'user' | 'assistant', text, createdAt, actions? }`, where each action
+is `{ id, label, kind?: 'default' | 'primary' | 'danger' }`.
 
 ### Events
 
@@ -391,6 +437,7 @@ has finished), `stop()`, `clear()`.
 | `show` / `hide`  | none                                       | A show / hide transition finished.                           |
 | `chat:open` / `chat:close` | none                             | The balloon opened / closed.                                 |
 | `chat:message`   | `{ message }`                              | A message was added (assistant ones once fully streamed).    |
+| `chat:action`    | `{ message, action }`                      | A button on a message was pressed.                           |
 
 ### Other exports
 

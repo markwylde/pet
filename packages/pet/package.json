@@ -1,6 +1,6 @@
 {
   "name": "@markwylde/pet",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Little animated pets for web apps, desktop apps and websites. Draggable, chatty, zero dependencies.",
   "keywords": ["pet", "mascot", "assistant", "companion", "animation", "svg", "chat", "ai", "electron", "tauri", "react"],
   "author": "Mark Wylde <me@markwylde.com>",

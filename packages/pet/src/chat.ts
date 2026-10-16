@@ -3,7 +3,7 @@ import type { Character } from './characters/types.js'
 import type { Placement } from './layout.js'
 import type { Store } from './storage.js'
 import { isSize } from './storage.js'
-import type { AssistantChunk, ChatMessage, ChatOptions, PetChat, PetEvents, PetInstance, Size } from './types.js'
+import type { AssistantChunk, ChatAction, ChatMessage, ChatOptions, ChatStatus, PetChat, PetEvents, PetInstance, Size } from './types.js'
 
 /** What the chat needs from the pet that owns it. */
 export interface ChatHost {
@@ -27,6 +27,9 @@ type Corner = 'nw' | 'ne' | 'sw' | 'se'
 
 const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`)
 
+const isAction = (a: unknown): a is ChatAction =>
+  typeof a === 'object' && a !== null && typeof (a as ChatAction).id === 'string' && typeof (a as ChatAction).label === 'string'
+
 const isMessages = (v: unknown): v is ChatMessage[] =>
   Array.isArray(v) &&
   v.every(
@@ -36,7 +39,8 @@ const isMessages = (v: unknown): v is ChatMessage[] =>
       typeof m.id === 'string' &&
       (m.role === 'user' || m.role === 'assistant') &&
       typeof m.text === 'string' &&
-      typeof m.createdAt === 'number',
+      typeof m.createdAt === 'number' &&
+      (m.actions === undefined || (Array.isArray(m.actions) && m.actions.every(isAction))),
   )
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, unknown> = {}, ...children: (Node | string)[]): HTMLElementTagNameMap[K] {
@@ -70,7 +74,7 @@ export class Chat implements PetChat {
 
   private _messages: ChatMessage[]
   private _open = false
-  private phase: 'idle' | 'thinking' | 'streaming' = 'idle'
+  private phase: ChatStatus = 'idle'
   private abort: AbortController | null = null
   private size: Size
   private placement: Placement = { side: 'right', align: 'bottom' }
@@ -80,7 +84,8 @@ export class Chat implements PetChat {
   constructor(host: ChatHost, options: ChatOptions) {
     this.host = host
     this.options = options
-    this._messages = host.store.get('messages', isMessages) ?? []
+    // a host that drives the chat owns the history, so don't bring back a saved one
+    this._messages = options.onSend ? [] : (host.store.get('messages', isMessages) ?? [])
     const saved = host.store.get('chat-size', isSize)
     this.size = saved ?? options.size ?? DEFAULT_SIZE
 
@@ -167,10 +172,15 @@ export class Chat implements PetChat {
   }
 
   stop() {
-    this.abort?.abort()
+    if (this.controlled) this.options.onStop?.()
+    else this.abort?.abort()
   }
 
   clear() {
+    if (this.controlled) {
+      this.options.onClear?.()
+      return
+    }
     this.stop()
     this._messages = []
     this.host.store.remove('messages')
@@ -181,12 +191,17 @@ export class Chat implements PetChat {
     text = text.trim()
     if (!text || this.busy) return
     this.open()
+    if (this.options.onSend) {
+      this.keepFocus()
+      this.options.onSend(text)
+      return
+    }
+    const { assistant } = this.options
+    if (!assistant) return
     const { pet } = this.host
     const user: ChatMessage = { id: uid(), role: 'user', text, createdAt: Date.now() }
     this.push(user)
-    // a suggestion chip that was clicked is gone now; keep focus in the balloon
-    const active = document.activeElement
-    if (!active || active === document.body || (active !== this.input && this.element.contains(active))) this.input.focus({ preventScroll: true })
+    this.keepFocus()
 
     const ctrl = new AbortController()
     this.abort = ctrl
@@ -196,7 +211,7 @@ export class Chat implements PetChat {
     let mood: AnimationName | Category = 'idle1'
     let reply: ChatMessage | null = null
     try {
-      const result = this.options.assistant([...this._messages], { signal: ctrl.signal, pet, character: this.host.character() })
+      const result = assistant([...this._messages], { signal: ctrl.signal, pet, character: this.host.character() })
       for await (const chunk of chunksOf(result)) {
         if (ctrl.signal.aborted) break
         if (typeof chunk === 'object' && 'mood' in chunk) {
@@ -240,6 +255,39 @@ export class Chat implements PetChat {
       this.renderMessages()
       this.save()
       void pet.play(mood)
+    }
+  }
+
+  setMessages(messages: readonly ChatMessage[]) {
+    const prev = this._messages
+    this._messages = [...messages]
+    // a reply growing in place: update its text rather than rebuilding the list
+    const last = this._messages[this._messages.length - 1]
+    const sameShape =
+      this.streamingEl !== null &&
+      prev.length === this._messages.length &&
+      prev.every((m, i) => m.id === this._messages[i].id && (i === prev.length - 1 || m === this._messages[i])) &&
+      !last.actions?.length
+    if (sameShape) {
+      this.streamingEl!.textContent = last.text.trimEnd()
+      this.scrollToEnd(true)
+      return
+    }
+    this.renderMessages()
+  }
+
+  setStatus(status: ChatStatus) {
+    if (status === this.phase) return
+    const was = this.phase
+    this.setPhase(status)
+    this.renderMessages()
+    const { pet } = this.host
+    if (status === 'thinking') void pet.play(this.options.thinkingAnimation ?? 'busy1', { loop: true })
+    else if (status === 'streaming') void pet.play(this.options.talkingAnimation ?? 'talk', { loop: true })
+    else {
+      void pet.play('idle1')
+      const last = this._messages[this._messages.length - 1]
+      if (was === 'streaming' && last?.role === 'assistant' && last.text) this.host.announce(`${this.host.character().name} says: ${last.text}`)
     }
   }
 
@@ -295,6 +343,16 @@ export class Chat implements PetChat {
 
   // ---------- internals ----------
 
+  private get controlled() {
+    return !!this.options.onSend
+  }
+
+  /** A suggestion chip that was clicked is gone now; keep focus in the balloon. */
+  private keepFocus() {
+    const active = document.activeElement
+    if (!active || active === document.body || (active !== this.input && this.element.contains(active))) this.input.focus({ preventScroll: true })
+  }
+
   private push(message: ChatMessage) {
     this._messages.push(message)
     if (this._messages.length > MAX_SAVED) this._messages.splice(0, this._messages.length - MAX_SAVED)
@@ -304,6 +362,7 @@ export class Chat implements PetChat {
   }
 
   private save() {
+    if (this.controlled) return
     this.host.store.set('messages', this._messages.filter((m) => m.text))
   }
 
@@ -358,6 +417,7 @@ export class Chat implements PetChat {
         this.streamingEl = node
       }
       nodes.push(node)
+      if (m.actions?.length) nodes.push(this.actionsFor(m))
     }
     if (this.phase === 'thinking') {
       this.typing ??= el('div', { className: 'mwpet-msg mwpet-typing', ariaLabel: 'typing' }, el('span'), el('span'), el('span'))
@@ -366,6 +426,19 @@ export class Chat implements PetChat {
     }
     this.list.replaceChildren(...nodes)
     this.scrollToEnd(false)
+  }
+
+  private actionsFor(message: ChatMessage): HTMLElement {
+    const row = el('div', { className: 'mwpet-msg-actions', role: 'group' })
+    row.dataset.role = message.role
+    row.setAttribute('aria-label', 'Reply options')
+    for (const action of message.actions ?? []) {
+      const b = el('button', { type: 'button' }, action.label)
+      b.dataset.kind = action.kind ?? 'default'
+      b.addEventListener('click', () => this.host.emit('chat:action', { message, action }))
+      row.append(b)
+    }
+    return row
   }
 
   private scrollToEnd(smooth: boolean) {
