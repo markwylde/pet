@@ -263,7 +263,7 @@ describe('characters', () => {
 describe('Whiskers', () => {
   const draw = (pose: Partial<Pose> = {}, time = 0) =>
     Whiskers.body({ pose: { ...BASE_POSE, ...pose }, time, id: (n) => `w-${n}`, url: (n) => `url(#w-${n})`, h: (() => '') as never })
-  const tail = (svg: string) => svg.match(/<path d="M 18 -24[^"]*"/)![0]
+  const tail = (svg: string) => svg.match(/<path d="M 50 -24[^"]*"/)![0]
 
   it('ships as a self-drawn cat', () => {
     expect(characters.Whiskers).toBe(Whiskers)
