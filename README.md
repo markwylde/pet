@@ -5,7 +5,7 @@ Little animated pets for your apps: web apps, desktop apps (Electron, Tauri) and
 | Path | What |
 | ---- | ---- |
 | [`packages/pet`](packages/pet) | **`@markwylde/pet`**, the library (zero dependencies, optional React bindings). Start with its [README](packages/pet/README.md). |
-| [`apps/demo`](apps/demo) | A playground built on the library: every animation, both characters, a mock streaming assistant, a tray dock. |
+| [`apps/demo`](apps/demo) | A playground built on the library: every animation, all three characters, a mock streaming assistant, a tray dock. |
 | [`apps/site`](apps/site) | The landing page at [markwylde.com/pet](https://markwylde.com/pet/). Plain TypeScript, no framework. Deployed to GitHub Pages by `.github/workflows/pages.yml`. |
 
 ```sh

@@ -5,12 +5,15 @@ import { SCREEN, createContext, type RenderContext } from './context.js'
 import { crtFace } from './crt.js'
 import { matrixFace, matrixGrid } from './matrix.js'
 import * as parts from './parts.js'
+import { toonFace } from './toon.js'
 
 /** The full stage the pet is drawn in, including room above for hearts and clouds. */
 export const STAGE_VIEWBOX = '-120 -250 240 290'
 
 function defs(ctx: RenderContext): string {
   const { palette } = ctx.character
+  // a toon face has no screen, so it needs none of the screen's gradients or clip
+  const screenless = ctx.character.face === 'toon'
   return h(
     'defs',
     null,
@@ -22,20 +25,22 @@ function defs(ctx: RenderContext): string {
       h('stop', { offset: 0.8, stopColor: 'rgba(0,0,0,0)' }),
       h('stop', { offset: 1, stopColor: 'rgba(0,0,0,0.12)' }),
     ),
-    h(
-      'radialGradient',
-      { id: ctx.id('screen'), cx: 0.5, cy: 0.45, r: 0.75 },
-      h('stop', { offset: 0, stopColor: palette.screenInner }),
-      h('stop', { offset: 1, stopColor: palette.screenOuter }),
-    ),
-    h(
-      'linearGradient',
-      { id: ctx.id('glass'), x1: 0, y1: 0, x2: 1, y2: 1 },
-      h('stop', { offset: 0, stopColor: 'rgba(255,255,255,0.22)' }),
-      h('stop', { offset: 0.4, stopColor: 'rgba(255,255,255,0.02)' }),
-      h('stop', { offset: 1, stopColor: 'rgba(255,255,255,0)' }),
-    ),
-    h('pattern', { id: ctx.id('scan'), width: 4, height: 3, patternUnits: 'userSpaceOnUse' }, h('rect', { width: 4, height: 1, fill: 'rgba(0,0,0,0.28)' })),
+    !screenless &&
+      h(
+        'radialGradient',
+        { id: ctx.id('screen'), cx: 0.5, cy: 0.45, r: 0.75 },
+        h('stop', { offset: 0, stopColor: palette.screenInner }),
+        h('stop', { offset: 1, stopColor: palette.screenOuter }),
+      ),
+    !screenless &&
+      h(
+        'linearGradient',
+        { id: ctx.id('glass'), x1: 0, y1: 0, x2: 1, y2: 1 },
+        h('stop', { offset: 0, stopColor: 'rgba(255,255,255,0.22)' }),
+        h('stop', { offset: 0.4, stopColor: 'rgba(255,255,255,0.02)' }),
+        h('stop', { offset: 1, stopColor: 'rgba(255,255,255,0)' }),
+      ),
+    !screenless && h('pattern', { id: ctx.id('scan'), width: 4, height: 3, patternUnits: 'userSpaceOnUse' }, h('rect', { width: 4, height: 1, fill: 'rgba(0,0,0,0.28)' })),
     h(
       'filter',
       { id: ctx.id('glow'), x: '-50%', y: '-50%', width: '200%', height: '200%' },
@@ -49,7 +54,14 @@ function defs(ctx: RenderContext): string {
       h('stop', { offset: 0.35, stopColor: '#ffb02e' }),
       h('stop', { offset: 1, stopColor: 'rgba(255,70,30,0)' }),
     ),
-    h('clipPath', { id: ctx.id('screen-clip') }, h('rect', { x: SCREEN.x, y: SCREEN.y, width: SCREEN.w, height: SCREEN.h, rx: 10 })),
+    screenless &&
+      h(
+        'radialGradient',
+        { id: ctx.id('shade') },
+        h('stop', { offset: 0.55, stopColor: '#1b1030' }),
+        h('stop', { offset: 1, stopColor: '#1b1030', stopOpacity: 0 }),
+      ),
+    !screenless && h('clipPath', { id: ctx.id('screen-clip') }, h('rect', { x: SCREEN.x, y: SCREEN.y, width: SCREEN.w, height: SCREEN.h, rx: 10 })),
   )
 }
 
@@ -83,6 +95,28 @@ function screen(p: Pose, t: number, ctx: RenderContext): string {
   )
 }
 
+/** A toon face has no screen: ink over the body, with glitch as a shiver and `screen` as a shadow. */
+function toonLayer(p: Pose, t: number, ctx: RenderContext): string {
+  const jitter = p.glitch > 0 ? Math.sin(t * 91) * 4 * p.glitch : 0
+  return h(
+    'g',
+    { transform: path`translate(${jitter} 0)` },
+    toonFace(p, t, ctx),
+    p.screen < 0.999 && h('ellipse', { class: 'mwpet-shade', cx: 0, cy: -98, rx: 58, ry: 50, fill: ctx.url('shade'), opacity: (1 - p.screen) * 0.6 }),
+    p.tears > 0.01 && parts.tears(p.tears, t, p.lookX, '#3c8fbf'),
+  )
+}
+
+function screenOverlays(p: Pose, ctx: RenderContext): string {
+  return [
+    p.progress >= 0 && parts.progressBar(p.progress, ctx),
+    p.code > 0 && parts.code(p.code, ctx),
+    p.spinner > 0 && parts.spinner(p.spinner, ctx),
+  ]
+    .filter(Boolean)
+    .join('')
+}
+
 /** Inner SVG markup for one frame. */
 export function renderFrame(p: Pose, time: number, ctx: RenderContext): string {
   const c = ctx.character
@@ -90,6 +124,14 @@ export function renderFrame(p: Pose, time: number, ctx: RenderContext): string {
   const fx = path`translate(${p.x} ${p.y})`
   const lift = Math.max(0, -p.y)
   const shadow = Math.max(0.35, 1 - lift / 120) * (p.propeller > 0 ? 0.6 : 1)
+  const toon = c.face === 'toon'
+  const limb = { pose: p, time, id: ctx.id, url: ctx.url, h }
+  const arm = (side: 'L' | 'R', angle: number) => {
+    if (!c.arm) return parts.arm(side, angle, ctx)
+    const { x, y } = c.anchors.shoulder
+    return c.arm({ ...limb, side, angle, shoulder: { x: side === 'L' ? -x : x, y } })
+  }
+  const overlays = toon ? screenOverlays(p, ctx) : ''
   return [
     defs(ctx),
     h('ellipse', { cx: p.x, cy: 6, rx: 44 * shadow, ry: 7 * shadow, fill: 'rgba(0,0,0,0.22)' }),
@@ -97,14 +139,14 @@ export function renderFrame(p: Pose, time: number, ctx: RenderContext): string {
     h(
       'g',
       { transform: body },
-      p.flame > 0 && parts.flame(time, p.flame, ctx),
-      parts.legs(p.legL, p.legR, ctx),
-      parts.antenna(p.antenna, p.propeller, time, ctx),
-      c.body({ pose: p, time, id: ctx.id, url: ctx.url, h }),
-      screen(p, time, ctx),
+      p.flame > 0 && c.rocket && parts.flame(time, p.flame, ctx),
+      c.legs ? c.legs({ ...limb, left: p.legL, right: p.legR }) : parts.legs(p.legL, p.legR, ctx),
+      c.antenna && parts.antenna(p.antenna, p.propeller, time, ctx),
+      c.body(limb),
+      toon ? toonLayer(p, time, ctx) : screen(p, time, ctx),
       p.keyboard > 0 && parts.keyboard(p.keyboard, time),
-      parts.arm('L', p.armL, ctx),
-      parts.arm('R', p.armR, ctx),
+      arm('L', p.armL),
+      arm('R', p.armR),
       p.sweat > 0.01 && parts.sweat(p.sweat, time, ctx),
     ),
     h(
@@ -114,7 +156,8 @@ export function renderFrame(p: Pose, time: number, ctx: RenderContext): string {
       p.zzz > 0 && parts.zzz(p.zzz),
       p.sparkles > 0 && parts.sparkles(p.sparkles),
       p.cloud > 0.01 && parts.rainCloud(p.cloud, time),
-      p.gears > 0 && parts.gears(p.gears),
+      p.gears > 0 && (toon ? h('g', { transform: 'translate(56 0)' }, parts.gears(p.gears)) : parts.gears(p.gears)),
+      overlays && parts.thoughtBubble(overlays, c.effectsOffsetY, ctx),
     ),
   ]
     .filter(Boolean)

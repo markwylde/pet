@@ -104,17 +104,47 @@ export function spinner(t: number, ctx: RenderContext): string {
   )
 }
 
-export function tears(k: number, t: number, lx: number): string {
+export function tears(k: number, t: number, lx: number, outline?: string): string {
   const drops: string[] = []
   for (const side of [-1, 1]) {
     for (let i = 0; i < 3; i++) {
       const ph = (t * 1.6 + i / 3 + (side > 0 ? 0.15 : 0)) % 1
       const x = side * (EYE_DX + 4) + lx + side * ph * 6
       const y = EYE_Y + 8 + ph * 40
-      drops.push(h('path', { transform: path`translate(${x} ${y}) scale(${0.9 + ph * 0.3})`, d: 'M 0 -4 Q 3 0 0 3 Q -3 0 0 -4 Z', fill: TEAR, opacity: k * (1 - ph * 0.6) }))
+      drops.push(h('path', { transform: path`translate(${x} ${y}) scale(${0.9 + ph * 0.3})`, d: 'M 0 -4 Q 3 0 0 3 Q -3 0 0 -4 Z', fill: TEAR, stroke: outline, strokeWidth: outline && 0.8, opacity: k * (1 - ph * 0.6) }))
     }
   }
   return drops.join('')
+}
+
+/** Where screen overlays sit: (0, MOUTH_Y + 2) is the middle of the progress bar, code and spinner. */
+const OVERLAY_CENTRE_Y = MOUTH_Y + 2
+
+/** Highest the bubble's centre may go (stage coordinates), so its top stays inside the stage. */
+const BUBBLE_MAX_Y = -215
+
+/**
+ * A cartoon thought bubble above the head. Toon characters have no screen, so progress,
+ * code and spinner overlays are drawn in here instead. Lives in the effects layer.
+ */
+export function thoughtBubble(content: string, offsetY: number, ctx: RenderContext): string {
+  const bx = -30
+  // offsetY is the effects layer's shift; clamp in stage coordinates
+  const by = Math.max(BUBBLE_MAX_Y - offsetY, -178)
+  const { screenInner, screenOuter } = ctx.character.palette
+  const puffs: [number, number, number][] = [
+    [-30, 4, 16], [-12, -8, 20], [12, -8, 20], [30, 4, 16], [0, 8, 20], [-18, 12, 14], [18, 12, 14],
+    [22, 34, 5], [32, 45, 3.5],
+  ]
+  const circles = (grow: number, fill: string) =>
+    h('g', { fill }, puffs.map(([x, y, r]) => h('circle', { cx: bx + x, cy: by + y, r: r + grow })))
+  return h(
+    'g',
+    { class: 'mwpet-thought' },
+    circles(2, screenOuter),
+    circles(0, screenInner),
+    h('g', { transform: path`translate(${bx} ${by}) scale(0.85) translate(0 ${-OVERLAY_CENTRE_Y})` }, content),
+  )
 }
 
 // ---------- props & effects ----------

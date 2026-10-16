@@ -589,7 +589,7 @@ code {
 
 .crew {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 22px;
   max-width: 900px;
   margin: 0 auto;

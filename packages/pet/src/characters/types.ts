@@ -21,10 +21,15 @@ export interface BodyContext {
   h: typeof h
 }
 
+/** What a character's {@link Character.arm} and {@link Character.legs} functions receive. */
+export type LimbContext = BodyContext
+
 /**
- * A character: everything that makes a pet look like itself. They all share one skeleton
- * (a screen face, arms, legs, an antenna and the effects), so a character only describes
- * colours, where limbs attach, and how to draw the body behind the screen.
+ * A character: everything that makes a pet look like itself. By default they share one
+ * skeleton (a screen face, arms, legs, an antenna and the effects), so a character only
+ * describes colours, where limbs attach, and how to draw the body behind the screen. A
+ * character that isn't a gadget can swap the face for `toon`, draw its own `arm` / `legs`,
+ * and switch off the `antenna` and `rocket` flames.
  *
  * Drawing space: the feet sit at (0, 0) and the body grows upward. The screen is the
  * rectangle x −42…42, y −124…−58, so draw a bezel around roughly x −47…47, y −129…−53.
@@ -38,16 +43,20 @@ export interface Character {
   name: string
   /** Short description used in copy, e.g. "desktop terminal". */
   kind: string
-  /** `crt`: smooth glowing strokes. `matrix`: an LED dot-matrix face. */
-  face: 'crt' | 'matrix'
+  /**
+   * `crt`: smooth glowing strokes. `matrix`: an LED dot-matrix face. `toon`: no screen at
+   * all; the face is inked straight onto the body and screen overlays (progress, code,
+   * spinner) appear in a thought bubble above the head.
+   */
+  face: 'crt' | 'matrix' | 'toon'
   palette: {
-    /** Colour of the face. */
+    /** Colour of the face (for `toon`, the ink). */
     phosphor: string
-    /** Dimmer face colour for secondary details. */
+    /** Dimmer face colour for secondary details (for `toon`, thought-bubble text). */
     phosphorDim: string
-    /** Screen background, centre. */
+    /** Screen background, centre (for `toon`, the thought bubble's fill). */
     screenInner: string
-    /** Screen background, edges. */
+    /** Screen background, edges (for `toon`, the thought bubble's outline). */
     screenOuter: string
   }
   limbs: {
@@ -66,15 +75,23 @@ export interface Character {
     /** Where a nervous sweat drop appears. */
     sweat: Anchor
   }
+  /** `false` hides the antenna and propeller hat; `body` still sees `pose.propeller` to fly its own way. */
+  antenna: boolean
+  /** `false` hides the foot flames during fast flight. */
+  rocket: boolean
   /** Shift effects drawn above the head (hearts, rain cloud, gears) for taller bodies. */
   effectsOffsetY: number
   /** viewBox that frames the character snugly, used by {@link renderIcon}. */
   iconViewBox: string
   /** Draws the body behind the screen. Return SVG markup. */
   body: (ctx: BodyContext) => string
+  /** Draws one arm in place of the shared stick arm. `angle` is degrees raised outward, as in the pose. */
+  arm?: (ctx: LimbContext & { side: 'L' | 'R'; angle: number; shoulder: Anchor }) => string
+  /** Draws both legs in place of the shared legs and feet. `left` / `right` are lifts in px. */
+  legs?: (ctx: LimbContext & { left: number; right: number }) => string
 }
 
-type Simple = 'kind' | 'face' | 'effectsOffsetY' | 'iconViewBox'
+type Simple = 'kind' | 'face' | 'antenna' | 'rocket' | 'effectsOffsetY' | 'iconViewBox'
 
 /**
  * What you pass to {@link defineCharacter}: a {@link Character} where everything with a

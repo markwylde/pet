@@ -227,6 +227,8 @@ describe('characters', () => {
       body: ({ h }) => h('rect', { width: 10, height: 10 }),
     })
     expect(c.face).toBe('crt')
+    expect(c.antenna).toBe(true)
+    expect(c.rocket).toBe(true)
     expect(c.anchors.shoulder).toEqual({ x: 57, y: -82 })
   })
 

@@ -5,7 +5,7 @@ and plain websites. Drop one in: it idles, blinks, flies around when you drag it
 you leave it alone, and chats with you through any AI backend you plug in.
 
 - **Zero dependencies.** Plain DOM + SVG, works with any framework (or none). Optional React bindings.
-- **Characters.** Ships with **Pixel** (a beige CRT terminal) and **Rack** (a home server with an LED face). Define your own.
+- **Characters.** Ships with **Pixel** (a beige CRT terminal), **Rack** (a home server with an LED face) and **Biscuit** (a cartoon dog). Define your own.
 - **17 animations** (idle, happy, sad, busy, flying, talking…) that blend smoothly into each other, plus your own.
 - **Promise-based actions.** `await pet.moveTo('center'); await pet.play('happy'); await pet.say('Hi!')`
 - **Chat balloon** with streaming replies: the pet thinks, then talks while the text arrives.
@@ -242,7 +242,7 @@ pet.play('dance', { speech: true })
 
 ### Custom characters
 
-Every character shares one skeleton (screen face, arms, legs, antenna, effects), so a
+By default every character shares one skeleton (screen face, arms, legs, antenna, effects), so a
 character only needs colours, attachment points and a body drawn behind the screen:
 
 ```ts
@@ -268,6 +268,21 @@ is the rectangle x −42…42, y −124…−58, so draw a bezel around x −47�
 function runs every frame and gets the current `pose` and `time`, so it can animate (Rack's
 drive lights do). It also gets `id()` / `url()` to namespace gradient ids. `limbs`, `anchors`,
 `effectsOffsetY` and `iconViewBox` all have defaults matching Pixel's proportions.
+
+#### Characters without a screen
+
+Not everything is a gadget. Biscuit swaps out every robot part, and any character can do the same:
+
+| Field              | Effect                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| `face: 'toon'`     | No screen. The face is inked straight onto the body in `palette.phosphor`. Progress, code and spinner appear in a thought bubble above the head (`screenInner` fills it, `screenOuter` outlines it, `phosphorDim` is its small text). `glitch` jitters the face and a dimmed `screen` shades it. |
+| `arm(ctx)`         | Draws one arm instead of the stick arm. Gets `side`, `angle` (degrees raised outward), `shoulder` (already mirrored for the left side), plus `pose`, `time`, `id`, `url` and `h`. |
+| `legs(ctx)`        | Draws both legs and feet. Gets `left` / `right` lifts in px plus the same helpers.               |
+| `antenna: false`   | No antenna or propeller hat. `body` still sees `pose.propeller`, so it can fly its own way (Biscuit flaps its ears). |
+| `rocket: false`    | No foot flames in fast flight. Speed lines stay.                                                 |
+
+The toon face's eyes and mouth sit where the screen face's do (eyes around y −100, mouth at y −75),
+so draw a head around them.
 
 ## API reference
 
@@ -361,7 +376,7 @@ has finished), `stop()`, `clear()`.
 
 | Export                  | Description                                                                      |
 | ----------------------- | -------------------------------------------------------------------------------- |
-| `Pixel`, `Rack`, `characters` | Built-in characters.                                                       |
+| `Pixel`, `Rack`, `Biscuit`, `characters` | Built-in characters.                                            |
 | `defineCharacter(input)`| Create a character with defaults filled in.                                      |
 | `renderIcon(character, { pose?, viewBox?, title? })` | A static `<svg>` string of a character.             |
 | `STAGE_VIEWBOX`         | The viewBox the live pet uses, with room above for effects. Pass it to `renderIcon` to include hearts, clouds etc. |
