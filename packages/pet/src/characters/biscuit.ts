@@ -52,7 +52,7 @@ export const Biscuit = defineCharacter({
   rocket: false,
   palette: { phosphor: INK, phosphorDim: '#8a7560', screenInner: '#ffffff', screenOuter: '#c9b9a6' },
   limbs: { line: OUTLINE, hand: CREAM, handStroke: OUTLINE, joint: FUR, foot: CREAM, footStroke: OUTLINE },
-  anchors: { shoulder: { x: 30, y: -54 }, antenna: { x: 0, y: -146 }, sweat: { x: 40, y: -128 } },
+  anchors: { shoulder: { x: 30, y: -60 }, antenna: { x: 0, y: -146 }, sweat: { x: 40, y: -128 } },
   effectsOffsetY: -14,
   iconViewBox: '-72 -160 144 168',
   body: ({ h, id, url, pose: p, time }) => {
@@ -83,11 +83,18 @@ export const Biscuit = defineCharacter({
         h('path', { d: 'M 0 0 Q 20 -6 24 -32', stroke: FUR, strokeWidth: 8, fill: 'none', strokeLinecap: 'round' }),
         h('circle', { cx: 24, cy: -33, r: 5, fill: BROWN }),
       ),
-      // body and belly
-      h('ellipse', { cx: 0, cy: -36, rx: 34, ry: 26, fill: url('biscuit-fur'), stroke: OUTLINE, strokeWidth: 2.5 }),
+      // broad-shouldered body whose top tucks under the head, and belly
+      h('path', {
+        class: 'mwpet-torso',
+        d: 'M 0 -74 C 24 -74 40 -72 40 -60 C 40 -50 34 -44 34 -36 C 34 -21.6 18.8 -10 0 -10 C -18.8 -10 -34 -21.6 -34 -36 C -34 -44 -40 -50 -40 -60 C -40 -72 -24 -74 0 -74 Z',
+        fill: url('biscuit-fur'),
+        stroke: OUTLINE,
+        strokeWidth: 2.5,
+      }),
       h('ellipse', { cx: 0, cy: -31, rx: 19, ry: 16, fill: CREAM }),
       // head with cheek fluff
       h('path', {
+        class: 'mwpet-head',
         d: 'M -50 -92 L -56 -84 L -48 -82 L -52 -74 L -44 -72 C -36 -56 36 -56 44 -72 L 52 -74 L 48 -82 L 56 -84 L 50 -92 C 50 -128 30 -146 0 -146 C -30 -146 -50 -128 -50 -92 Z',
         fill: url('biscuit-fur'),
         stroke: OUTLINE,
