@@ -2,32 +2,74 @@
 
 Little animated pets for your apps: web apps, desktop apps (Electron, Tauri) and websites.
 
-| Path | What |
-| ---- | ---- |
-| [`packages/pet`](packages/pet) | **`@markwylde/pet`**, the library (zero dependencies, optional React bindings). Start with its [README](packages/pet/README.md). |
-| [`apps/demo`](apps/demo) | A playground built on the library: every animation, every character, a mock streaming assistant, a tray dock. |
-| [`apps/site`](apps/site) | The landing page at [markwylde.com/pet](https://markwylde.com/pet/). Plain TypeScript, no framework. Deployed to GitHub Pages by `.github/workflows/pages.yml`. |
+<p align="center">
+  <img src="docs/characters.svg" alt="The built-in characters: Pixel, Rack, Biscuit and Whiskers" width="720">
+</p>
+
+It idles, blinks, flies around when you drag it, naps in a dock when you leave it alone, and chats
+through any AI backend you plug in. Zero dependencies, written in TypeScript.
+See it live at [markwylde.com/pet](https://markwylde.com/pet/).
+
+## Install
 
 ```sh
-npm install
-npm run dev        # demo at http://localhost:5173, hot-reloading the library source
-npm run site       # landing page at http://localhost:5173/pet/
-npm test           # library tests
-npm run build      # build the library (packages/pet/dist) and the demo
-npm run lint
-```
-
-## Publishing
-
-Published to npmjs and GitHub Packages by `.github/workflows/publish.yml` whenever a `v*` tag is pushed. Bump the version in `packages/pet/package.json`, commit, then:
-
-```sh
-git tag v0.1.1 && git push origin v0.1.1
-```
-
-To install it, point the `@markwylde` scope at GitHub Packages (needs a token with `read:packages`):
-
-```sh
-echo "@markwylde:registry=https://npm.pkg.github.com" >> .npmrc
 npm install @markwylde/pet
 ```
+
+## Usage
+
+```ts
+import Pet, { Whiskers, type Assistant } from '@markwylde/pet'
+
+const pet = Pet({ character: Whiskers, size: 0.8, position: 'bottom-right' })
+
+// Every action returns a promise that resolves false if the user interrupts it
+await pet.moveTo('center')
+await pet.play('happy')
+await pet.say('Hello there!')
+
+pet.play('busy2', { loop: true }) // keep typing until told otherwise
+pet.stop() // back to idling
+
+// React to the user
+pet.on('click', () => console.log('poked!'))
+```
+
+Give it an assistant and clicking the pet opens a chat balloon. Replies can be a string, a promise,
+or an async iterable that streams chunks:
+
+```ts
+const assistant: Assistant = async function* (messages, { signal }) {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ messages }),
+    signal,
+  })
+  const reader = res.body!.pipeThrough(new TextDecoderStream()).getReader()
+  for (;;) {
+    const { value, done } = await reader.read()
+    if (done) break
+    yield value
+  }
+}
+
+pet.set({ chat: { assistant, suggestions: ['What can you do?'] } })
+```
+
+The [library README](packages/pet/README.md) covers the full API: docking and auto-hide, persisting
+state, theming, React bindings, custom animations and custom characters.
+
+## Repository
+
+| Path | What |
+| ---- | ---- |
+| [`packages/pet`](packages/pet) | **`@markwylde/pet`**, the library. |
+| [`apps/demo`](apps/demo) | A playground: every animation, every character, a mock streaming assistant, a tray dock. |
+| [`apps/site`](apps/site) | The landing page at [markwylde.com/pet](https://markwylde.com/pet/). |
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) to run them locally.
+
+## License
+
+MIT © Mark Wylde
