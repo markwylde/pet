@@ -1,7 +1,5 @@
 # Publishes packages/pet when a v* tag is pushed:
-#   - to npmjs via trusted publishing (OIDC, no token; configured on npmjs.com against this file).
-#     The publisher is stage-only, so the release waits in npm's stage queue until a maintainer
-#     approves it: npm stage approve @markwylde/pet@<version> (or on npmjs.com).
+#   - to npmjs via trusted publishing (OIDC, no token; configured on npmjs.com against this file)
 #   - to GitHub Packages (npm.pkg.github.com)
 # Bump packages/pet/package.json's version, then: git tag v0.2.0 && git push origin v0.2.0
 name: Publish package
@@ -24,10 +22,8 @@ jobs:
           node-version: 24
           cache: npm
           registry-url: https://registry.npmjs.org
-      - run: npm install -g npm@latest # staged publishing needs npm >= 11.15
       - run: npm ci
-      - run: npm stage publish --access public
-        working-directory: packages/pet
+      - run: npm publish -w @markwylde/pet --access public
 
   github:
     runs-on: ubuntu-latest
