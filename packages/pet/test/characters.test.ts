@@ -41,6 +41,44 @@ const tail = (pose: Partial<Pose>, time: number) => rotation(frame(Biscuit, pose
 const ear = (pose: Partial<Pose>, time: number) => -rotation(frame(Biscuit, pose, time), 'mwpet-ear')
 const overSecond = (f: (t: number) => number) => samples(1, 400).map(f)
 
+type Point = [number, number]
+/** Flatten an absolute M/L/Q/C/Z path into a polygon. */
+function polygon(d: string): Point[] {
+  const tokens = d.match(/[MLQCZ]|-?[\d.]+/g)!
+  const pts: Point[] = []
+  let cmd = ''
+  for (let i = 0; i < tokens.length; ) {
+    if (/[A-Z]/.test(tokens[i])) cmd = tokens[i++]
+    if (cmd === 'Z') continue
+    const n = { M: 2, L: 2, Q: 4, C: 6 }[cmd]!
+    const v = tokens.slice(i, (i += n)).map(Number)
+    const ctrl: Point[] = [pts.at(-1) ?? [v[0], v[1]]]
+    for (let k = 0; k < n; k += 2) ctrl.push([v[k], v[k + 1]])
+    if (n === 2) pts.push(ctrl[1])
+    else
+      for (let t = 0.05; t <= 1.0001; t += 0.05) {
+        let level = ctrl
+        while (level.length > 1) level = level.slice(1).map((q, j) => [level[j][0] + (q[0] - level[j][0]) * t, level[j][1] + (q[1] - level[j][1]) * t])
+        pts.push(level[0])
+      }
+  }
+  return pts
+}
+const inside = ([x, y]: Point, poly: Point[]) =>
+  poly.reduce((hit, [x1, y1], i) => {
+    const [x2, y2] = poly[(i + 1) % poly.length]
+    return (y1 > y) !== (y2 > y) && x < x1 + ((y - y1) * (x2 - x1)) / (y2 - y1) ? !hit : hit
+  }, false)
+/** Lowest y of the outline at this x. */
+const underside = (x: number, poly: Point[]) =>
+  Math.max(
+    ...poly.flatMap(([x1, y1], i) => {
+      const [x2, y2] = poly[(i + 1) % poly.length]
+      return (x1 <= x) !== (x2 <= x) ? [y1 + ((x - x1) * (y2 - y1)) / (x2 - x1)] : []
+    }),
+  )
+const shape = (svg: string, cls: string) => polygon(svg.match(new RegExp(`class="${cls}" d="([^"]+)"`))![1])
+
 const SHARED_HAND = 'cy="33" r="7"'
 const SHARED_FOOT = 'rx="12" ry="5.5"'
 const ANTENNA = ['#a33b5b', '#4fb3ff'] // bobble and propeller hat
@@ -157,6 +195,27 @@ describe('Biscuit', () => {
     for (const part of ['mwpet-tail', 'mwpet-ear', 'mwpet-paw', 'mwpet-hindleg']) expect(svg).toContain(part)
     expect(svg).not.toContain(SHARED_HAND)
     expect(svg).not.toContain(SHARED_FOOT)
+  })
+
+  it('joins its head to its body with no gap', () => {
+    const svg = frame()
+    const head = shape(svg, 'mwpet-head')
+    const torso = shape(svg, 'mwpet-torso')
+    for (let x = -36; x <= 36; x += 2) expect(inside([x, underside(x, head) + 1], torso), `x=${x}`).toBe(true)
+  })
+
+  it('starts each foreleg inside its head or body', () => {
+    const svg = frame()
+    const body = [shape(svg, 'mwpet-head'), shape(svg, 'mwpet-torso')]
+    const paws = [...svg.matchAll(/class="mwpet-paw" transform="translate\(([-\d.]+) ([-\d.]+)\) rotate\(([-\d.]+)\)"/g)]
+    expect(paws).toHaveLength(2)
+    for (const [, x, y, deg] of paws) {
+      const a = (Number(deg) * Math.PI) / 180
+      for (const [px, py] of [[-7, -2], [0, -2], [7, -2]]) {
+        const p: Point = [Number(x) + px * Math.cos(a) - py * Math.sin(a), Number(y) + px * Math.sin(a) + py * Math.cos(a)]
+        expect(body.some((poly) => inside(p, poly)), `paw at ${x} → ${p}`).toBe(true)
+      }
+    }
   })
 
   it('swings its ears with the antenna sway', () => {
