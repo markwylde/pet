@@ -24,7 +24,7 @@ export type { Animation, AnimationName, BuiltInAnimation, Category, MotionContex
 export { BASE_POSE } from './pose.js'
 export type { EyeShape, Pose } from './pose.js'
 
-export { renderIcon } from './render/index.js'
+export { STAGE_VIEWBOX, renderIcon } from './render/index.js'
 export type { IconOptions } from './render/index.js'
 export { css, injectStyles } from './styles.js'
 

@@ -207,9 +207,11 @@ export function createPet(options: PetOptions = {}): PetInstance {
     emitter.emit('animationstart', { name })
   }
 
+  let speechWidth = 0
   const showSpeech = (text: string, ms: number) => {
     speech.textContent = text
     speech.hidden = false
+    speechWidth = speech.offsetWidth
     window.clearTimeout(st.speechTimer)
     st.speechTimer = window.setTimeout(() => (speech.hidden = true), ms)
   }
@@ -374,7 +376,10 @@ export function createPet(options: PetOptions = {}): PetInstance {
     },
     character: () => opt.character,
     emit: <K extends keyof PetEvents>(event: K, payload: PetEvents[K]) => {
-      if (event === 'chat:open') st.relayout = true
+      if (event === 'chat:open') {
+        st.relayout = true
+        speech.hidden = true // the balloon takes over; don't talk over it
+      }
       emitter.emit(event, payload)
     },
     store,
@@ -495,6 +500,16 @@ export function createPet(options: PetOptions = {}): PetInstance {
     root.style.transform = `translate(${st.pos.x}px, ${st.pos.y}px) scale(${scale})`
     root.style.transformOrigin = `${feet.x}px ${feet.y}px`
     root.style.opacity = String(opacity)
+    if (!speech.hidden) {
+      // nudge the bubble back on screen; its tail keeps pointing at the pet
+      const centre = st.pos.x + (BOX.width * size) / 2
+      const half = speechWidth / 2
+      const b = bounds()
+      const overLeft = b.left + 8 - (centre - half)
+      const overRight = centre + half - (b.right - 8)
+      const shift = overLeft > 0 ? overLeft : overRight > 0 ? -overRight : 0
+      speech.style.setProperty('--mwpet-shift', `${shift}px`)
+    }
     body.innerHTML = `<svg viewBox="${STAGE_VIEWBOX}" width="100%" height="100%" aria-hidden="true" focusable="false">${renderFrame(st.last, st.clock, ctx)}</svg>`
   }
 

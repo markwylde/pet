@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pet: a tiny friend for your website</title>
+    <meta name="description" content="@markwylde/pet: little animated desktop pets for the web. Draggable, chatty, promise-based, zero dependencies." />
+    <meta property="og:title" content="Pet: a tiny friend for your website" />
+    <meta property="og:description" content="Little animated desktop pets for the web, in the spirit of Microsoft Agent." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='5' width='26' height='21' rx='6' fill='%23f3ead6' stroke='%238a7a5c' stroke-width='2'/%3E%3Crect x='7' y='9' width='18' height='13' rx='3' fill='%2306180f'/%3E%3Crect x='11' y='12' width='3' height='5' rx='1.5' fill='%2362ffb0'/%3E%3Crect x='18' y='12' width='3' height='5' rx='1.5' fill='%2362ffb0'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <nav class="nav">
+      <a class="brand" href="#top" aria-label="Pet home"><span class="brand-icon" data-icon="pixel"></span>pet</a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#moods">Moods</a>
+        <a href="#code">Code</a>
+        <a href="#chat">Chat</a>
+        <a class="nav-gh" href="https://github.com/markwylde/pet">GitHub</a>
+      </div>
+    </nav>
+
+    <main id="top">
+      <!-- ============ hero ============ -->
+      <header class="hero">
+        <div class="sky" aria-hidden="true">
+          <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span>
+          <span class="twinkle t1">✦</span><span class="twinkle t2">✦</span><span class="twinkle t3">✧</span><span class="twinkle t4">✦</span>
+        </div>
+        <div class="hero-copy">
+          <p class="eyebrow">@markwylde/pet · v0.1</p>
+          <h1>A tiny friend<br />for your <span class="squiggle">website</span>.</h1>
+          <p class="lede">
+            Little animated desktop pets in the spirit of Microsoft Agent. They idle, blink, fly when you drag them, nap when you
+            ignore them, and chat with whatever AI you plug in. Zero dependencies.
+          </p>
+          <div class="cta">
+            <button class="btn btn-primary" id="say-hi">Say hi 👋</button>
+            <a class="btn" href="#code">Get started</a>
+          </div>
+          <button class="install" id="install" title="Copy to clipboard">
+            <span class="prompt">$</span> npm install @markwylde/pet <span class="copy" aria-hidden="true">⧉</span>
+            <span class="copied" role="status"></span>
+          </button>
+        </div>
+        <div class="hero-stage">
+          <div class="stage" id="stage" aria-hidden="true">
+            <span class="spot"></span>
+            <span class="rug"></span>
+          </div>
+          <p class="stage-hint">psst, the little guy is real. Drag him. Throw him. Click him.</p>
+        </div>
+        <a class="scroll-cue" href="#features" aria-label="Scroll down"><span></span></a>
+      </header>
+
+      <!-- ============ features ============ -->
+      <section class="section" id="features" data-react="features">
+        <div class="section-head">
+          <p class="eyebrow">What's in the box</p>
+          <h2>Small library. Big personality.</h2>
+        </div>
+        <div class="features">
+          <article class="feature" style="--tint: var(--mint)">
+            <span class="feature-icon">🪶</span>
+            <h3>Zero dependencies</h3>
+            <p>Plain DOM and SVG. Drop it into React, Vue, Svelte, htmx or a hand-written HTML page. There are optional React bindings if that's your thing.</p>
+          </article>
+          <article class="feature" style="--tint: var(--sky)">
+            <span class="feature-icon">🚁</span>
+            <h3>Drag, throw, fly</h3>
+            <p>Drag slowly and his propeller comes out. Drag fast and he goes turbo. Let go and he glides, bouncing off the edges of the screen.</p>
+          </article>
+          <article class="feature" style="--tint: var(--sun)">
+            <span class="feature-icon">💬</span>
+            <h3>Chats with any AI</h3>
+            <p>Hand him an <code>assistant</code> function and he'll think, then talk while the reply streams in. Bring your own backend.</p>
+          </article>
+          <article class="feature" style="--tint: var(--coral)">
+            <span class="feature-icon">⏳</span>
+            <h3>Awaitable everything</h3>
+            <p><code>await pet.moveTo('center')</code>, <code>await pet.play('happy')</code>, <code>await pet.say('hi')</code>. Script little scenes, and they stop cleanly when someone grabs him.</p>
+          </article>
+          <article class="feature" style="--tint: var(--lilac)">
+            <span class="feature-icon">😴</span>
+            <h3>Naps in a dock</h3>
+            <p>Leave him alone and he dives into a dock of your choice, like a tray icon. One click brings him bouncing back.</p>
+          </article>
+          <article class="feature" style="--tint: var(--mint)">
+            <span class="feature-icon">♿</span>
+            <h3>Accessible &amp; typed</h3>
+            <p>Keyboard-operable (arrow keys fly him), labelled for screen readers, follows reduced motion. TypeScript with docs on every option.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ characters ============ -->
+      <section class="section section-tinted" id="crew" data-react="crew">
+        <div class="section-head">
+          <p class="eyebrow">Meet the crew</p>
+          <h2>Pick a pal. Or build your own.</h2>
+        </div>
+        <div class="crew" id="crew-list"></div>
+        <p class="crew-note">Toasty isn't in the library. He's made with <code>defineCharacter()</code> in about 40 lines on this page.</p>
+      </section>
+
+      <!-- ============ moods ============ -->
+      <section class="section" id="moods" data-react="moods">
+        <div class="section-head">
+          <p class="eyebrow">17 animations</p>
+          <h2>Every mood, beautifully blended.</h2>
+          <p class="sub">Hover a card to preview it, or click to make the real one do it. Animations are pure functions of time, so they blend smoothly into each other, and you can add your own.</p>
+        </div>
+        <div class="moods" id="moods-grid"></div>
+      </section>
+
+      <!-- ============ code ============ -->
+      <section class="section section-tinted" id="code" data-react="code">
+        <div class="section-head">
+          <p class="eyebrow">Five lines to a friend</p>
+          <h2>Ridiculously easy to adopt.</h2>
+        </div>
+        <div class="code-card">
+          <div class="tabs" role="tablist" id="code-tabs"></div>
+          <pre class="code" id="code-body"></pre>
+          <div class="code-foot">
+            <span id="code-note"></span>
+            <button class="btn btn-small" id="code-run">▶ Run it on him</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ chat ============ -->
+      <section class="section" id="chat" data-react="chat">
+        <div class="split">
+          <div>
+            <p class="eyebrow">Plug in a brain</p>
+            <h2>He thinks. He talks. He streams.</h2>
+            <p class="sub">
+              Your <code>assistant</code> can return a string, a promise, or an async iterable of chunks. While it waits he looks busy,
+              while words arrive his mouth flaps, and when it's done he reacts with whatever <code>{ mood }</code> you yield.
+            </p>
+            <ul class="ticks">
+              <li>Stop button aborts your request via <code>AbortSignal</code></li>
+              <li>Resizable balloon that sticks to him and stays on-screen</li>
+              <li>History and size can persist in localStorage</li>
+            </ul>
+            <button class="btn btn-primary" id="open-chat">Ask him about the API</button>
+          </div>
+          <pre class="code code-float" id="chat-code"></pre>
+        </div>
+      </section>
+
+      <!-- ============ dock ============ -->
+      <section class="section section-tinted" id="dock" data-react="dock">
+        <div class="split split-reverse">
+          <div>
+            <p class="eyebrow">Nap time</p>
+            <h2>Out of the way when you're busy.</h2>
+            <p class="sub">
+              Give him a <code>dock</code>, any element, and <code>hide()</code> sends him diving into it. With <code>autoHide</code> he
+              tucks himself in after a while on his own. Click the dock to wake him.
+            </p>
+            <button class="btn btn-primary" id="tuck">Tuck him in</button>
+          </div>
+          <div class="fake-desktop">
+            <div class="fake-window"><span></span><span></span><span></span></div>
+            <div class="fake-taskbar">
+              <span class="fake-start">◆</span>
+              <span class="fake-clock" id="fake-clock"></span>
+              <button class="fake-tray" id="tray" aria-label="Wake him up" title="Wake him up"></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ outro ============ -->
+      <section class="outro">
+        <h2>Go on. Adopt one.</h2>
+        <button class="install install-big" id="install-2" title="Copy to clipboard">
+          <span class="prompt">$</span> npm install @markwylde/pet <span class="copy" aria-hidden="true">⧉</span>
+          <span class="copied" role="status"></span>
+        </button>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://github.com/markwylde/pet#readme">Read the docs</a>
+          <a class="btn" href="https://www.npmjs.com/package/@markwylde/pet">npm</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>MIT · made with too many SVG paths by <a href="https://markwylde.com">Mark Wylde</a></span>
+      <span class="footer-pets" id="footer-pets"></span>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

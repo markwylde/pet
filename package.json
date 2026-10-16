@@ -8,10 +8,11 @@
   ],
   "scripts": {
     "dev": "npm run dev -w @markwylde/pet-demo",
-    "build": "npm run build -w @markwylde/pet && npm run build -w @markwylde/pet-demo",
+    "build": "npm run build -w @markwylde/pet && npm run build -w @markwylde/pet-demo && npm run build -w @markwylde/pet-site",
     "test": "npm test -w @markwylde/pet",
     "typecheck": "npm run typecheck -w @markwylde/pet && npm run build -w @markwylde/pet-demo",
-    "lint": "oxlint packages apps"
+    "lint": "oxlint packages apps",
+    "site": "npm run dev -w @markwylde/pet-site"
   },
   "devDependencies": {
     "oxlint": "^1.81.0",

@@ -364,6 +364,7 @@ has finished), `stop()`, `clear()`.
 | `Pixel`, `Rack`, `characters` | Built-in characters.                                                       |
 | `defineCharacter(input)`| Create a character with defaults filled in.                                      |
 | `renderIcon(character, { pose?, viewBox?, title? })` | A static `<svg>` string of a character.             |
+| `STAGE_VIEWBOX`         | The viewBox the live pet uses, with room above for effects. Pass it to `renderIcon` to include hearts, clouds etc. |
 | `ANIMATIONS`            | The built-in animations by name.                                                 |
 | `ANIMATION_GROUPS`      | Playable built-ins grouped by category, handy for building a UI.                 |
 | `motion`                | Helpers for writing animations.                                                  |

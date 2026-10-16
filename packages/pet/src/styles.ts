@@ -82,7 +82,7 @@ export const css = /* css */ `
   line-height: 1.35;
   text-align: center;
   width: max-content;
-  transform: translateX(-50%);
+  transform: translateX(calc(-50% + var(--mwpet-shift, 0px)));
   pointer-events: none;
   animation: mwpet-pop 0.25s cubic-bezier(0.3, 1.6, 0.6, 1);
 }
@@ -90,13 +90,13 @@ export const css = /* css */ `
   content: '';
   position: absolute;
   top: 100%;
-  left: 50%;
+  left: calc(50% - var(--mwpet-shift, 0px));
   margin-left: -8px;
   border: 8px solid transparent;
   border-top-color: var(--mwpet-surface);
 }
 .mwpet-speech[hidden] { display: none; }
-@keyframes mwpet-pop { from { opacity: 0; transform: translate(-50%, 6px) scale(0.6); } }
+@keyframes mwpet-pop { from { opacity: 0; transform: translate(calc(-50% + var(--mwpet-shift, 0px)), 6px) scale(0.6); } }
 
 /* ---------- chat balloon ---------- */
 .mwpet-chat {
