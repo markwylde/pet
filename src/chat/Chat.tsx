@@ -18,6 +18,7 @@ const CORNERS: Corner[] = ['nw', 'ne', 'sw', 'se']
 
 interface Props {
   placement: AttachmentPlacement
+  name: string
   messages: ChatMessage[]
   thinking: boolean
   streamingId: number | null
@@ -30,7 +31,7 @@ interface Props {
   onClose: () => void
 }
 
-export function Chat({ placement, messages, thinking, streamingId, size, onResize, onSend, onStop, onClear, onClose }: Props) {
+export function Chat({ placement, name, messages, thinking, streamingId, size, onResize, onSend, onStop, onClear, onClose }: Props) {
   const busy = thinking || streamingId !== null
   const [draft, setDraft] = useState('')
   const input = useRef<HTMLInputElement>(null)
@@ -69,7 +70,7 @@ export function Chat({ placement, messages, thinking, streamingId, size, onResiz
     const max = { w: Math.min(MAX.w, placement.maxW), h: Math.min(MAX.h, placement.maxH) }
     const edgeX = d.corner[1] === 'w' ? 'left' : 'right'
     const edgeY = d.corner[0] === 'n' ? 'top' : 'bottom'
-    // the edge pinned to Pixel (CSS left/right, top/bottom); dragging it moves Pixel too
+    // the edge pinned to the pet (CSS left/right, top/bottom); dragging it moves the pet too
     const anchorX = placement.side === 'right' ? 'left' : 'right'
     const anchorY = placement.align === 'top' ? 'top' : 'bottom'
 
@@ -93,11 +94,11 @@ export function Chat({ placement, messages, thinking, streamingId, size, onResiz
       className={`chat chat-${placement.side} chat-${placement.align}`}
       style={{ width: Math.min(size.w, placement.maxW), height: Math.min(size.h, placement.maxH) }}
       role="dialog"
-      aria-label="Chat with Pixel"
+      aria-label={`Chat with ${name}`}
     >
       <header className="chat-head">
         <span className="chat-dot" />
-        <strong>Pixel</strong>
+        <strong>{name}</strong>
         <span className="chat-sub">{thinking ? 'thinking…' : streamingId !== null ? 'typing…' : 'online'}</span>
         {messages.length > 0 && (
           <button className="chat-clear" onClick={onClear} title="Clear conversation">
@@ -110,14 +111,14 @@ export function Chat({ placement, messages, thinking, streamingId, size, onResiz
       </header>
 
       <div className="chat-list" ref={list}>
-        {messages.length === 0 && <div className="chat-empty">Hi! I'm Pixel. Ask me anything.</div>}
+        {messages.length === 0 && <div className="chat-empty">Hi! I'm {name}. Ask me anything.</div>}
         {messages.map((m) => (
           <div key={m.id} className={`msg msg-${m.role}${m.id === streamingId ? ' streaming' : ''}`}>
             {m.id === streamingId ? m.text.trimEnd() : m.text}
           </div>
         ))}
         {thinking && (
-          <div className="msg msg-assistant typing" aria-label="Pixel is typing">
+          <div className="msg msg-assistant typing" aria-label={`${name} is typing`}>
             <span />
             <span />
             <span />
@@ -136,7 +137,7 @@ export function Chat({ placement, messages, thinking, streamingId, size, onResiz
       )}
 
       <form className="chat-input" onSubmit={submit}>
-        <input ref={input} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask Pixel…" aria-label="Message Pixel" />
+        <input ref={input} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Ask ${name}…`} aria-label={`Message ${name}`} />
         {busy ? (
           <button type="button" className="stop" onClick={onStop}>
             Stop

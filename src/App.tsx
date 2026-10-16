@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Chat, type ChatSize } from './chat/Chat'
 import { mockAssistant, type ChatMessage } from './chat/mockAssistant'
 import { ANIMATIONS, CATEGORIES, type AnimationName } from './pet/animations'
+import { CHARACTER_IDS, CHARACTERS, isCharacterId, type CharacterId } from './pet/characters'
 import { Pet, STATUS_BAR_H, type PetHandle, type Point, type Visibility } from './pet/Pet'
 import { PetSvg } from './pet/PetSvg'
 import { BASE_POSE } from './pet/pose'
@@ -31,6 +32,8 @@ export default function App() {
   const [autoHide, setAutoHide] = usePersistentState('autoHide', true, isBoolean)
   const [speed, setSpeed] = usePersistentState('speed', 1, isNumber)
   const [size, setSize] = usePersistentState('size', 1, isNumber)
+  const [character, setCharacter] = usePersistentState<CharacterId>('character', 'terminal', isCharacterId)
+  const rig = CHARACTERS[character]
   const [initialPosition] = useState(() => loadSaved<Point | null>('position', null, isPoint))
   const clock = useClock()
 
@@ -67,7 +70,7 @@ export default function App() {
     let mood: AnimationName = 'idle1'
     let reply = ''
     try {
-      for await (const ev of mockAssistant(history, ctrl.signal)) {
+      for await (const ev of mockAssistant(history, ctrl.signal, rig)) {
         if (ev.type === 'mood') {
           mood = ev.mood
           continue
@@ -118,16 +121,45 @@ export default function App() {
 
   const docked = visibility === 'hidden'
 
+  const chooseCharacter = (id: CharacterId) => {
+    if (id === character) return
+    setCharacter(id)
+    pet.current?.play('happy3', { speech: false }) // a little flip to show off the new body
+  }
+
   return (
     <div className="stage">
       <aside className="panel">
         <header>
-          <h1>Pixel the Terminal</h1>
+          <h1>
+            {rig.name} the {character === 'server' ? 'Server' : 'Terminal'}
+          </h1>
           <p>Click me to chat. Drag me around, drag fast to go turbo. Leave me alone and I'll nap in the tray.</p>
           <p className="hint">
-            Keyboard: <kbd>Tab</kbd> to Pixel, <kbd>Enter</kbd> to chat, arrows to fly (<kbd>Shift</kbd> for turbo), <kbd>Esc</kbd> to close.
+            Keyboard: <kbd>Tab</kbd> to {rig.name}, <kbd>Enter</kbd> to chat, arrows to fly (<kbd>Shift</kbd> for turbo), <kbd>Esc</kbd> to close.
           </p>
         </header>
+
+        <section className="group group-character">
+          <h2>Character</h2>
+          <div className="characters" role="radiogroup" aria-label="Character">
+            {CHARACTER_IDS.map((id) => (
+              <button
+                key={id}
+                role="radio"
+                aria-checked={id === character}
+                className={`character ${id === character ? 'active' : ''}`}
+                onClick={() => chooseCharacter(id)}
+              >
+                <span className="character-preview">
+                  <PetSvg pose={BASE_POSE} time={0} viewBox={CHARACTERS[id].trayViewBox} character={id} />
+                </span>
+                <span className="character-name">{CHARACTERS[id].name}</span>
+                <span className="character-kind">{CHARACTERS[id].kind}</span>
+              </button>
+            ))}
+          </div>
+        </section>
 
         {CATEGORIES.map((cat) => (
           <section key={cat.key} className={`group group-${cat.key}`}>
@@ -181,6 +213,7 @@ export default function App() {
         getTrayPoint={getTrayPoint}
         initialPosition={initialPosition}
         onRest={(p) => save('position', p)}
+        character={character}
         onAnimationChange={setCurrent}
         onVisibilityChange={onVisibilityChange}
         onPetClick={() => setChatOpen((o) => !o)}
@@ -189,6 +222,7 @@ export default function App() {
           chatOpen && (
             <Chat
               placement={placement}
+              name={rig.name}
               messages={messages}
               thinking={thinking}
               streamingId={streamingId}
@@ -204,20 +238,20 @@ export default function App() {
       />
 
       <div className="sr-only" aria-live="polite">
-        {announcement && `Pixel says: ${announcement}`}
+        {announcement && `${rig.name} says: ${announcement}`}
       </div>
 
       <footer className="statusbar" style={{ height: STATUS_BAR_H }}>
-        <span className="status-left mono">pixel@desktop ~ $</span>
+        <span className="status-left mono">{rig.name.toLowerCase()}@desktop ~ $</span>
         <div className="tray">
           <button
             ref={tray}
             className={`tray-pet ${docked ? 'docked' : ''}`}
             onClick={() => (docked ? pet.current?.show() : pet.current?.hide())}
-            title={docked ? 'Bring Pixel back' : 'Send Pixel to the tray'}
-            aria-label={docked ? 'Bring Pixel back' : 'Send Pixel to the tray'}
+            title={docked ? `Bring ${rig.name} back` : `Send ${rig.name} to the tray`}
+            aria-label={docked ? `Bring ${rig.name} back` : `Send ${rig.name} to the tray`}
           >
-            <PetSvg pose={BASE_POSE} time={0} viewBox="-72 -168 144 172" />
+            <PetSvg pose={BASE_POSE} time={0} viewBox={rig.trayViewBox} character={character} />
           </button>
           <span className="clock mono">{clock}</span>
         </div>

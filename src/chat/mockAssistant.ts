@@ -7,14 +7,19 @@ export interface ChatMessage {
 }
 
 export type AssistantEvent =
-  | { type: 'mood'; mood: AnimationName } // how Pixel should feel once the reply is done
+  | { type: 'mood'; mood: AnimationName } // how the pet should feel once the reply is done
   | { type: 'text'; delta: string } // next chunk of the reply
 
 /**
  * Streams a reply for the conversation so far. Swap this for a real model call later;
  * the chat only depends on this shape. Must stop (throwing an AbortError) when `signal` aborts.
  */
-export type Assistant = (history: ChatMessage[], signal: AbortSignal) => AsyncIterable<AssistantEvent>
+export interface Persona {
+  name: string
+  kind: string
+}
+
+export type Assistant = (history: ChatMessage[], signal: AbortSignal, persona: Persona) => AsyncIterable<AssistantEvent>
 
 interface Rule {
   match: RegExp
@@ -28,7 +33,7 @@ const RULES: Rule[] = [
   { match: /\b(thanks|thank you|cheers|ty|love)\b/i, mood: 'happy2', replies: ['Aww, anytime!', 'You just made my pixels glow.'] },
   { match: /\b(sad|bad day|tired|upset|broke|failed|error)\b/i, mood: 'sad1', replies: ["Oh no, that's rough. Want to talk it through?", "Sorry to hear that. I'm here if you need me."] },
   { match: /\b(code|bug|compile|build|deploy|typescript|react)\b/i, mood: 'busy2', replies: ["Ooh, code! Once I'm hooked up to a real brain I'll dig into that properly. For now: have you tried turning it off and on again?", 'Let me compile my thoughts… done. Check your imports first, it is always the imports.'] },
-  { match: /\b(what can you do|help|who are you|what are you)\b/i, mood: 'happy3', replies: ["I'm Pixel, your desktop terminal buddy! Right now my answers are mocked, but soon I'll answer real questions. You can drag me, throw me, and I'll nap in the tray when you're busy."] },
+  { match: /\b(what can you do|help|who are you|what are you)\b/i, mood: 'happy3', replies: ["I'm {name}, your {kind} buddy! Right now my answers are mocked, but soon I'll answer real questions. You can drag me, throw me, and I'll nap in the tray when you're busy."] },
   { match: /\b(hide|tray|sleep|go away)\b/i, mood: 'idle3', replies: ['Leave me alone for 10 seconds and I will curl up in the tray. Click the tray icon to wake me.'] },
   { match: /\b(weather|rain)\b/i, mood: 'sad3', replies: ["I can't see outside yet, but my forecast says: 100% chance of cloud over my head."] },
 ]
@@ -52,10 +57,10 @@ function sleep(ms: number, signal: AbortSignal) {
   })
 }
 
-export const mockAssistant: Assistant = async function* (history, signal) {
+export const mockAssistant: Assistant = async function* (history, signal, persona) {
   const last = [...history].reverse().find((m) => m.role === 'user')?.text ?? ''
   const rule = RULES.find((r) => r.match.test(last))
-  const text = rule ? pick(rule.replies) : pick(FALLBACK)
+  const text = (rule ? pick(rule.replies) : pick(FALLBACK)).replaceAll('{name}', persona.name).replaceAll('{kind}', persona.kind)
 
   await sleep(700 + Math.random() * 900, signal) // "thinking"
   yield { type: 'mood', mood: rule?.mood ?? 'idle2' }

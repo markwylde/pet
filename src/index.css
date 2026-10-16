@@ -102,6 +102,54 @@ body {
 .group-busy { --accent: var(--busy); }
 .group-flying { --accent: var(--flying); }
 .group-talk { --accent: var(--talk); }
+.group-character { --accent: var(--muted); }
+
+.characters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.character {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--btn);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.character:hover {
+  background: var(--btn-hover);
+}
+
+.character.active {
+  border-color: var(--user);
+  box-shadow: inset 0 0 0 1px var(--user);
+}
+
+.character-preview {
+  width: 54px;
+  height: 54px;
+}
+
+.character-preview svg {
+  display: block;
+}
+
+.character-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.character-kind {
+  color: var(--muted);
+  font-size: 11px;
+}
 
 .buttons {
   display: flex;

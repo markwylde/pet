@@ -1,8 +1,13 @@
-import { useId, type ReactNode } from 'react'
+import { createContext, useContext, useId, type ReactNode } from 'react'
+import { CHARACTERS, type CharacterId, type Rig } from './characters'
 import type { EyeShape, Pose } from './pose'
 
-const PHOSPHOR = '#62ffb0'
-const PHOSPHOR_DIM = '#2f9e6a'
+// Face colours come from the character, so the same face works on any screen.
+const RigCtx = createContext<Rig>(CHARACTERS.terminal)
+const usePhosphor = () => {
+  const { phosphor, phosphorDim } = useContext(RigCtx).palette
+  return { PHOSPHOR: phosphor, PHOSPHOR_DIM: phosphorDim }
+}
 const TEAR = '#8fdcff'
 const PINK = '#ff6f9b'
 
@@ -16,9 +21,12 @@ interface Props {
   pose: Pose
   time: number
   viewBox?: string
+  character?: CharacterId
 }
 
-export function PetSvg({ pose: p, time, viewBox = '-120 -250 240 290' }: Props) {
+export function PetSvg({ pose: p, time, viewBox = '-120 -250 240 290', character = 'terminal' }: Props) {
+  const rig = CHARACTERS[character]
+  const { Chassis } = rig
   const bodyTransform =
     `translate(${p.x} ${p.y}) translate(0 -80) rotate(${p.rot}) translate(0 80) ` + `scale(${p.sx} ${p.sy})`
   const fxTransform = `translate(${p.x} ${p.y})`
@@ -26,8 +34,9 @@ export function PetSvg({ pose: p, time, viewBox = '-120 -250 240 290' }: Props) 
   const shadowScale = Math.max(0.35, 1 - lift / 120) * (p.propeller > 0 ? 0.6 : 1)
 
   return (
+    <RigCtx value={rig}>
     <svg viewBox={viewBox} width="100%" height="100%" style={{ overflow: 'visible' }}>
-      <Defs />
+      <Defs rig={rig} />
 
       {/* ground shadow */}
       <ellipse cx={p.x} cy={6} rx={44 * shadowScale} ry={7 * shadowScale} fill="rgba(0,0,0,0.22)" />
@@ -37,9 +46,8 @@ export function PetSvg({ pose: p, time, viewBox = '-120 -250 240 290' }: Props) 
       <g transform={bodyTransform}>
         {p.flame > 0 && <Flame t={time} k={p.flame} />}
         <Legs l={p.legL} r={p.legR} />
-        <Stand />
         <Antenna sway={p.antenna} propeller={p.propeller} t={time} />
-        <Monitor />
+        <Chassis p={p} t={time} />
         <Screen p={p} t={time} />
         {p.keyboard > 0 && <Keyboard k={p.keyboard} t={time} />}
         <Arm side="L" angle={p.armL} />
@@ -47,7 +55,7 @@ export function PetSvg({ pose: p, time, viewBox = '-120 -250 240 290' }: Props) 
         {p.sweat > 0.01 && <Sweat k={p.sweat} t={time} />}
       </g>
 
-      <g transform={fxTransform}>
+      <g transform={`${fxTransform} translate(0 ${rig.fxOffsetY})`}>
         {p.hearts > 0 && <Hearts t={p.hearts} />}
         {p.zzz > 0 && <Zzz t={p.zzz} />}
         {p.sparkles > 0 && <Sparkles t={p.sparkles} />}
@@ -55,25 +63,22 @@ export function PetSvg({ pose: p, time, viewBox = '-120 -250 240 290' }: Props) 
         {p.gears > 0 && <Gears t={p.gears} />}
       </g>
     </svg>
+    </RigCtx>
   )
 }
 
-function Defs() {
+function Defs({ rig }: { rig: Rig }) {
   return (
     <defs>
-      <linearGradient id="pet-body" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#f3ead6" />
-        <stop offset="1" stopColor="#d9cbad" />
-      </linearGradient>
       <linearGradient id="pet-body-side" x1="0" y1="0" x2="1" y2="0">
         <stop offset="0" stopColor="rgba(255,255,255,0.35)" />
         <stop offset="0.25" stopColor="rgba(255,255,255,0)" />
         <stop offset="0.8" stopColor="rgba(0,0,0,0)" />
         <stop offset="1" stopColor="rgba(0,0,0,0.12)" />
       </linearGradient>
-      <radialGradient id="pet-screen" cx="0.5" cy="0.45" r="0.75">
-        <stop offset="0" stopColor="#14432d" />
-        <stop offset="1" stopColor="#06180f" />
+      <radialGradient id={`pet-screen-${rig.id}`} cx="0.5" cy="0.45" r="0.75">
+        <stop offset="0" stopColor={rig.palette.screenInner} />
+        <stop offset="1" stopColor={rig.palette.screenOuter} />
       </radialGradient>
       <linearGradient id="pet-glass" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stopColor="rgba(255,255,255,0.22)" />
@@ -104,36 +109,12 @@ function Defs() {
 
 // ---------- body parts ----------
 
-function Monitor() {
-  return (
-    <g>
-      <rect x={-58} y={-142} width={116} height={106} rx={22} fill="url(#pet-body)" stroke="#8a7a5c" strokeWidth={2.5} />
-      <rect x={-58} y={-142} width={116} height={106} rx={22} fill="url(#pet-body-side)" />
-      {/* bezel */}
-      <rect x={-47} y={-129} width={94} height={76} rx={14} fill="#b8a888" stroke="#8a7a5c" strokeWidth={1.5} />
-      {/* vents + power LED */}
-      {[0, 1, 2, 3].map((i) => (
-        <line key={i} x1={-40 + i * 7} y1={-45} x2={-37 + i * 7} y2={-41} stroke="#a8977a" strokeWidth={2} strokeLinecap="round" />
-      ))}
-      <circle cx={40} cy={-44} r={2.6} fill={PHOSPHOR} filter="url(#pet-glow)" />
-    </g>
-  )
-}
-
-function Stand() {
-  return (
-    <g>
-      <rect x={-14} y={-40} width={28} height={12} fill="#cbbb9c" stroke="#8a7a5c" strokeWidth={2} />
-      <rect x={-34} y={-31} width={68} height={11} rx={5} fill="url(#pet-body)" stroke="#8a7a5c" strokeWidth={2.5} />
-    </g>
-  )
-}
-
 function Legs({ l, r }: { l: number; r: number }) {
+  const { limb } = useContext(RigCtx)
   const leg = (x: number, lift: number) => (
     <g>
-      <path d={`M ${x * 0.7} -22 Q ${x * 0.95} ${-12 - lift / 2} ${x} ${-6 - lift}`} stroke="#5d5140" strokeWidth={4} fill="none" strokeLinecap="round" />
-      <ellipse cx={x + Math.sign(x) * 3} cy={-4 - lift} rx={12} ry={5.5} fill="#e55d4f" stroke="#8a3a30" strokeWidth={2} />
+      <path d={`M ${x * 0.7} -22 Q ${x * 0.95} ${-12 - lift / 2} ${x} ${-6 - lift}`} stroke={limb.line} strokeWidth={4} fill="none" strokeLinecap="round" />
+      <ellipse cx={x + Math.sign(x) * 3} cy={-4 - lift} rx={12} ry={5.5} fill={limb.foot} stroke={limb.footStroke} strokeWidth={2} />
     </g>
   )
   return (
@@ -145,21 +126,23 @@ function Legs({ l, r }: { l: number; r: number }) {
 }
 
 function Arm({ side, angle }: { side: 'L' | 'R'; angle: number }) {
-  const sx = side === 'L' ? -57 : 57
+  const { shoulder, limb } = useContext(RigCtx)
+  const sx = side === 'L' ? -shoulder.x : shoulder.x
   const rot = side === 'L' ? angle : -angle
   return (
-    <g transform={`translate(${sx} -82) rotate(${rot})`}>
-      <path d="M 0 0 Q 4 16 0 30" stroke="#5d5140" strokeWidth={4} fill="none" strokeLinecap="round" />
-      <circle cx={0} cy={0} r={4} fill="#cbbb9c" stroke="#8a7a5c" strokeWidth={1.5} />
-      <circle cx={0} cy={33} r={7} fill="#f7f1e3" stroke="#8a7a5c" strokeWidth={2} />
+    <g transform={`translate(${sx} ${shoulder.y}) rotate(${rot})`}>
+      <path d="M 0 0 Q 4 16 0 30" stroke={limb.line} strokeWidth={4} fill="none" strokeLinecap="round" />
+      <circle cx={0} cy={0} r={4} fill={limb.joint} stroke={limb.handStroke} strokeWidth={1.5} />
+      <circle cx={0} cy={33} r={7} fill={limb.hand} stroke={limb.handStroke} strokeWidth={2} />
     </g>
   )
 }
 
 function Antenna({ sway, propeller, t }: { sway: number; propeller: number; t: number }) {
+  const { antenna, limb } = useContext(RigCtx)
   return (
-    <g transform={`translate(14 -141) rotate(${sway})`}>
-      <path d="M 0 0 Q 2 -12 6 -24" stroke="#5d5140" strokeWidth={3} fill="none" strokeLinecap="round" />
+    <g transform={`translate(${antenna.x} ${antenna.y}) rotate(${sway})`}>
+      <path d="M 0 0 Q 2 -12 6 -24" stroke={limb.line} strokeWidth={3} fill="none" strokeLinecap="round" />
       {propeller > 0 ? (
         <Propeller t={t} speed={propeller} />
       ) : (
@@ -187,11 +170,13 @@ function Propeller({ t, speed }: { t: number; speed: number }) {
 // ---------- screen & face ----------
 
 function Screen({ p, t }: { p: Pose; t: number }) {
+  const rig = useContext(RigCtx)
+  const { PHOSPHOR } = usePhosphor()
   const jitter = p.glitch > 0 ? Math.sin(t * 91) * 4 * p.glitch : 0
   const hideMouth = p.progress >= 0 || p.code > 0 || p.spinner > 0
   return (
     <g clipPath="url(#pet-screen-clip)">
-      <rect x={SCREEN.x} y={SCREEN.y} width={SCREEN.w} height={SCREEN.h} fill="url(#pet-screen)" />
+      <rect x={SCREEN.x} y={SCREEN.y} width={SCREEN.w} height={SCREEN.h} fill={`url(#pet-screen-${rig.id})`} />
       <g transform={`translate(${jitter} 0)`} filter="url(#pet-glow)">
         {p.blush > 0.01 && (
           <g fill={PINK} opacity={p.blush * 0.55}>
@@ -217,6 +202,7 @@ function Screen({ p, t }: { p: Pose; t: number }) {
 }
 
 function Eye({ cx, cy, shape, open, side, t }: { cx: number; cy: number; shape: EyeShape; open: number; side: 'L' | 'R'; t: number }) {
+  const { PHOSPHOR } = usePhosphor()
   const stroke = { stroke: PHOSPHOR, strokeWidth: 3.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' }
   const dir = side === 'L' ? 1 : -1
   switch (shape) {
@@ -267,6 +253,7 @@ function Eye({ cx, cy, shape, open, side, t }: { cx: number; cy: number; shape: 
 }
 
 function Brows({ k, lx, ly }: { k: number; lx: number; ly: number }) {
+  const { PHOSPHOR } = usePhosphor()
   const y = EYE_Y - 14 + ly * 0.6
   const inner = 4.5 * Math.min(k, 1.3)
   return (
@@ -278,6 +265,7 @@ function Brows({ k, lx, ly }: { k: number; lx: number; ly: number }) {
 }
 
 function Mouth({ curve, open, width, dx, dy }: { curve: number; open: number; width: number; dx: number; dy: number }) {
+  const { PHOSPHOR } = usePhosphor()
   const clipId = useId()
   const w = 12 * width
   const y = MOUTH_Y + dy
@@ -310,6 +298,7 @@ function Mouth({ curve, open, width, dx, dy }: { curve: number; open: number; wi
 }
 
 function ProgressBar({ k }: { k: number }) {
+  const { PHOSPHOR, PHOSPHOR_DIM } = usePhosphor()
   return (
     <g>
       <rect x={-28} y={-80} width={56} height={10} rx={3} fill="none" stroke={PHOSPHOR} strokeWidth={2} />
@@ -326,6 +315,7 @@ const CODE_LINES = [
 ]
 
 function Code({ t }: { t: number }) {
+  const { PHOSPHOR, PHOSPHOR_DIM } = usePhosphor()
   const lineH = 6
   const offset = (t * 22) % lineH
   const first = Math.floor((t * 22) / lineH)
@@ -347,6 +337,7 @@ function Code({ t }: { t: number }) {
 }
 
 function Spinner({ t }: { t: number }) {
+  const { PHOSPHOR } = usePhosphor()
   const dots = 8
   const head = Math.floor(t * 12) % dots
   return (
@@ -392,9 +383,10 @@ function Keyboard({ k, t }: { k: number; t: number }) {
 }
 
 function Sweat({ k, t }: { k: number; t: number }) {
+  const { sweat } = useContext(RigCtx)
   const slide = (t * 0.8) % 1
   return (
-    <path transform={`translate(${52} ${-128 + slide * 14}) scale(1.3)`} d="M 0 -6 Q 5 1 0 4 Q -5 1 0 -6 Z" fill={TEAR} stroke="#3c8fbf" strokeWidth={1} opacity={k * (1 - slide * 0.5)} />
+    <path transform={`translate(${sweat.x} ${sweat.y + slide * 14}) scale(1.3)`} d="M 0 -6 Q 5 1 0 4 Q -5 1 0 -6 Z" fill={TEAR} stroke="#3c8fbf" strokeWidth={1} opacity={k * (1 - slide * 0.5)} />
   )
 }
 

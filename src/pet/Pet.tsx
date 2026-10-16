@@ -1,6 +1,7 @@
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type Ref } from 'react'
 import { ANIMATIONS, HIDE_LEAP, SHOW_LAND, type AnimationName, type MotionContext } from './animations'
 import { BASE_POSE, lerpPose, type Pose } from './pose'
+import { CHARACTERS, type CharacterId } from './characters'
 import { PetSvg } from './PetSvg'
 
 export const PET_W = 180
@@ -68,6 +69,7 @@ interface Props {
   initialPosition?: Point | null
   /** Called once the pet has stopped moving somewhere new. */
   onRest?: (pos: Point) => void
+  character?: CharacterId
 }
 
 interface Sample {
@@ -180,6 +182,7 @@ export function Pet({
   attachmentSize,
   initialPosition,
   onRest,
+  character = 'terminal',
 }: Props) {
   const body = useRef<HTMLDivElement>(null)
   const [frame, setFrame] = useState({ pose: BASE_POSE, time: 0, x: 0, y: 0, scale: 1, opacity: 1, side: 'right' as Side['side'], align: 'bottom' as Side['align'] })
@@ -549,14 +552,14 @@ export function Pet({
         className="pet-body"
         role="button"
         tabIndex={visibility === 'shown' ? 0 : -1}
-        aria-label="Pixel, your desktop assistant. Press Enter to chat, arrow keys to fly around."
+        aria-label={`${CHARACTERS[character].name}, your ${CHARACTERS[character].kind}. Press Enter to chat, arrow keys to fly around.`}
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <PetSvg pose={frame.pose} time={frame.time} />
+        <PetSvg pose={frame.pose} time={frame.time} character={character} />
       </div>
       {speech && <div className="pet-speech">{speech}</div>}
       {visibility === 'shown' && renderAttachment?.(placement)}
