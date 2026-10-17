@@ -19,9 +19,9 @@ The landing page is deployed to GitHub Pages by `.github/workflows/pages.yml`.
 
 ## Publishing
 
-Published to npmjs and GitHub Packages by `.github/workflows/publish.yml` whenever a `v*` tag is
-pushed. Bump the version in `packages/pet/package.json`, commit, then:
-
-```sh
-git tag v0.1.2 && git push origin v0.1.2
-```
+Releases are cut by the **Trigger Release** workflow (`.github/workflows/publish.yml`): open the
+Actions tab, pick it and hit *Run workflow*. semantic-release works out the next version from the
+[conventional commits](https://www.conventionalcommits.org) since the last `v*` tag (`fix:` → patch,
+`feat:` → minor, `feat!:` / `BREAKING CHANGE:` → major), publishes `@markwylde/pet` to npmjs and
+GitHub Packages, commits the version bump, tags it and writes the GitHub release. Commits like
+`chore:`, `docs:` or `ci:` alone don't trigger a release.

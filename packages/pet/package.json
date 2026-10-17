@@ -2,7 +2,19 @@
   "name": "@markwylde/pet",
   "version": "0.2.1",
   "description": "Little animated pets for web apps, desktop apps and websites. Draggable, chatty, zero dependencies.",
-  "keywords": ["pet", "mascot", "assistant", "companion", "animation", "svg", "chat", "ai", "electron", "tauri", "react"],
+  "keywords": [
+    "pet",
+    "mascot",
+    "assistant",
+    "companion",
+    "animation",
+    "svg",
+    "chat",
+    "ai",
+    "electron",
+    "tauri",
+    "react"
+  ],
   "author": "Mark Wylde <me@markwylde.com>",
   "license": "MIT",
   "repository": {
@@ -27,7 +39,12 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "src", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -39,14 +56,16 @@
     "react": ">=18"
   },
   "peerDependenciesMeta": {
-    "react": { "optional": true }
+    "react": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
     "happy-dom": "^20.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "@types/react-dom": "^19.2.7",
     "typescript": "~6.0.2",
     "vitest": "^4.0.0"
   },

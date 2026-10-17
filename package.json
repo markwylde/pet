@@ -15,7 +15,10 @@
     "site": "npm run dev -w @markwylde/pet-site"
   },
   "devDependencies": {
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
     "oxlint": "^1.81.0",
+    "semantic-release": "^25.0.9",
     "typescript": "~6.0.2"
   }
 }
