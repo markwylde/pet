@@ -49,6 +49,18 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string,
   return node
 }
 
+/** A drawn cross, so it sits in the middle of its button whatever the font. */
+function closeIcon(): SVGSVGElement {
+  const ns = 'http://www.w3.org/2000/svg'
+  const svg = document.createElementNS(ns, 'svg')
+  svg.setAttribute('viewBox', '0 0 16 16')
+  svg.setAttribute('aria-hidden', 'true')
+  const path = document.createElementNS(ns, 'path')
+  path.setAttribute('d', 'M4 4l8 8M12 4l-8 8')
+  svg.append(path)
+  return svg
+}
+
 /** Turn whatever an assistant returned into a stream of chunks. */
 async function* chunksOf(result: unknown): AsyncIterable<AssistantChunk> {
   const value = await result
@@ -69,6 +81,7 @@ export class Chat implements PetChat {
   private clear_: HTMLButtonElement
   private status: HTMLElement
   private title: HTMLElement
+  private dot: HTMLElement
   private typing: HTMLElement | null = null
   private streamingEl: HTMLElement | null = null
 
@@ -91,8 +104,10 @@ export class Chat implements PetChat {
 
     this.title = el('span', { className: 'mwpet-chat-title' })
     this.status = el('span', { className: 'mwpet-chat-status' }, 'online')
+    this.dot = el('span', { className: 'mwpet-chat-dot' })
     this.clear_ = el('button', { className: 'mwpet-chat-clear', type: 'button', title: 'Clear conversation' }, 'Clear')
-    const close = el('button', { className: 'mwpet-chat-close', type: 'button', title: 'Close (Esc)', ariaLabel: 'Close chat' }, '×')
+    const close = el('button', { className: 'mwpet-chat-close', type: 'button', title: 'Close (Esc)', ariaLabel: 'Close chat' })
+    close.append(closeIcon())
     this.empty = el('div', { className: 'mwpet-chat-empty' })
     this.list = el('div', { className: 'mwpet-chat-list' })
     this.suggest = el('div', { className: 'mwpet-chat-suggest' })
@@ -103,7 +118,14 @@ export class Chat implements PetChat {
     this.element = el(
       'div',
       { className: 'mwpet-chat', hidden: true, role: 'dialog' },
-      el('header', { className: 'mwpet-chat-head' }, el('span', { className: 'mwpet-chat-dot' }), this.title, this.status, this.clear_, close),
+      el(
+        'header',
+        { className: 'mwpet-chat-head' },
+        this.dot,
+        el('div', { className: 'mwpet-chat-heading' }, this.title, this.status),
+        this.clear_,
+        close,
+      ),
       this.list,
       this.suggest,
       form,
@@ -368,7 +390,8 @@ export class Chat implements PetChat {
 
   private setPhase(phase: Chat['phase']) {
     this.phase = phase
-    this.status.textContent = phase === 'thinking' ? 'thinking…' : phase === 'streaming' ? 'typing…' : 'online'
+    this.dot.dataset.phase = phase
+    this.applyStatus()
     this.syncButton()
   }
 
@@ -384,9 +407,16 @@ export class Chat implements PetChat {
     }
   }
 
+  private applyStatus() {
+    const phase = this.phase === 'thinking' ? 'thinking…' : this.phase === 'streaming' ? 'typing…' : 'online'
+    this.status.textContent = this.options.subtitle ? `${this.options.subtitle} · ${phase}` : phase
+  }
+
   private applyText() {
     const name = this.host.character().name
     this.title.textContent = this.options.title ?? name
+    this.title.title = this.options.title ?? name
+    this.applyStatus()
     this.element.setAttribute('aria-label', `Chat with ${this.options.title ?? name}`)
     this.empty.textContent = this.options.greeting ?? `Hi! I'm ${name}. Ask me anything.`
     this.input.placeholder = this.options.placeholder ?? `Ask ${name}…`

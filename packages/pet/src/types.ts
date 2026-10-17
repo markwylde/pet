@@ -161,8 +161,10 @@ export interface ChatOptions {
   onStop?: () => void
   /** With `onSend`: called when the user presses Clear. */
   onClear?: () => void
-  /** Header title. Defaults to the character's name. */
+  /** Header title. Defaults to the character's name. Long titles are cut short with an ellipsis. */
   title?: string
+  /** A short line under the title, before the status, e.g. the model answering ("Claude Code · online"). */
+  subtitle?: string
   /** Shown while the conversation is empty. Defaults to "Hi! I'm {name}. Ask me anything." */
   greeting?: string
   /** Quick-reply chips shown while the conversation is empty. */

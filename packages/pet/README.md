@@ -382,7 +382,8 @@ on the client (e.g. in `useEffect`), or use the React bindings.
 | `assistant`         | `Assistant`      | required unless `onSend`         | Produces replies (see [Chat and AI](#chat-and-ai)). |
 | `onSend`            | `(text) => void` | none                             | Take over the conversation ([details](#when-the-conversation-lives-somewhere-else)). |
 | `onStop` / `onClear`| `() => void`     | none                             | With `onSend`: Stop / Clear were pressed.     |
-| `title`             | `string`         | character name                   | Header title.                                 |
+| `title`             | `string`         | character name                   | Header title; cut short with an ellipsis.     |
+| `subtitle`          | `string`         | none                             | Line under the title, before the status.      |
 | `greeting`          | `string`         | "Hi! I'm {name}. Ask me anything." | Shown while the conversation is empty.      |
 | `suggestions`       | `string[]`       | `[]`                             | Quick-reply chips for an empty conversation.  |
 | `placeholder`       | `string`         | "Ask {name}…"                    | Input placeholder.                            |
