@@ -1,44 +1,33 @@
-# Publishes packages/pet when a v* tag is pushed:
-#   - to npmjs via trusted publishing (OIDC, no token; configured on npmjs.com against this file)
-#   - to GitHub Packages (npm.pkg.github.com)
-# Bump packages/pet/package.json's version, then: git tag v0.2.0 && git push origin v0.2.0
-name: Publish package
+# Run from the Actions tab ("Trigger Release" → Run workflow). semantic-release reads the
+# conventional commits since the last v* tag, picks the next version, then:
+#   - publishes packages/pet to npmjs via trusted publishing (OIDC, no token; configured on
+#     npmjs.com against this file, so keep the filename)
+#   - publishes it to GitHub Packages (npm.pkg.github.com)
+#   - commits the bumped version back to main, tags it and creates a GitHub release
+# Nothing is released if there are no feat/fix/breaking commits since the last tag.
+name: Trigger Release
 
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
 
 jobs:
-  npm:
+  release:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
+      issues: write
+      pull-requests: write
+      packages: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-          registry-url: https://registry.npmjs.org
       - run: npm ci
-      - run: npm publish -w @markwylde/pet --access public
-
-  github:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          registry-url: https://npm.pkg.github.com
-          scope: '@markwylde'
-      - run: npm ci
-      - run: npm publish -w @markwylde/pet
+      - run: npx semantic-release
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
