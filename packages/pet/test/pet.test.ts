@@ -243,6 +243,21 @@ describe('chat', () => {
     expect(pet.animation).toBe('busy1')
   })
 
+  it('puts the subtitle and the status under the title, and pulses the dot while busy', () => {
+    const pet = make({ chat: { onSend: () => {}, title: 'Pixel', subtitle: 'Claude Code' } })
+    pet.chat.open()
+    const status = pet.element.querySelector('.mwpet-chat-status')!
+    const dot = pet.element.querySelector<HTMLElement>('.mwpet-chat-dot')!
+    expect(pet.element.querySelector('.mwpet-chat-title')!.textContent).toBe('Pixel')
+    expect(status.textContent).toBe('Claude Code · online')
+    pet.chat.setStatus('thinking')
+    expect(status.textContent).toBe('Claude Code · thinking…')
+    expect(dot.dataset.phase).toBe('thinking')
+    pet.set({ chat: { subtitle: 'Codex' } })
+    expect(status.textContent).toBe('Codex · thinking…')
+    expect(pet.element.querySelector('.mwpet-chat-close svg')).not.toBeNull()
+  })
+
   it('renders message actions and emits chat:action', () => {
     const pet = make({ chat: { onSend: () => {} } })
     const actions = vi.fn()
