@@ -1,4 +1,4 @@
-import Pet, { ANIMATIONS, ANIMATION_GROUPS, Biscuit, Pixel, Rack, STAGE_VIEWBOX, Whiskers, motion, renderIcon, type Animation, type Character } from '@markwylde/pet'
+import Pet, { ANIMATIONS, ANIMATION_GROUPS, Biscuit, Ollie, Pixel, Rack, STAGE_VIEWBOX, Whiskers, motion, renderIcon, type Animation, type Character } from '@markwylde/pet'
 import { docsBot } from './docsBot'
 import { highlight } from './highlight'
 import { CHAT_SNIPPET, SNIPPETS } from './snippets'
@@ -301,6 +301,7 @@ const CREW: { character: Character; blurb: string }[] = [
   { character: Rack, blurb: 'Quietly runs your whole house. LED face, chatty drive lights.' },
   { character: Biscuit, blurb: 'A very good boy. Ink-drawn face, ears that double as wings.' },
   { character: Whiskers, blurb: 'Not a gadget at all. A ginger cat whose tail swishes faster when busy.' },
+  { character: Ollie, blurb: 'Up past midnight with you. Glasses slide down its beak while it thinks, and it actually flaps when it flies.' },
   { character: Toasty, blurb: 'Made on this page with defineCharacter(). Toast pops when happy.' },
 ]
 
@@ -459,7 +460,7 @@ window.setInterval(clock, 15_000)
 
 // ---------- footer ----------
 
-$('#footer-pets').innerHTML = [Pixel, Rack, Biscuit, Whiskers, Toasty].map((c) => `<span title="${c.name}">${renderIcon(c)}</span>`).join('')
+$('#footer-pets').innerHTML = [Pixel, Rack, Biscuit, Whiskers, Ollie, Toasty].map((c) => `<span title="${c.name}">${renderIcon(c)}</span>`).join('')
 
 renderCrew()
 renderMoods()

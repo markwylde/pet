@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { BASE_POSE, type EyeShape, type Pose } from '../src/pose.js'
-import Pet, { Pixel, Rack, Whiskers, characters, defineCharacter, renderIcon, type Assistant, type PetInstance } from '../src/index.js'
+import Pet, { Ollie, Pixel, Rack, Whiskers, characters, defineCharacter, renderIcon, type Assistant, type PetInstance } from '../src/index.js'
 
 let pets: PetInstance[] = []
 const make = (...args: Parameters<typeof Pet>) => {
@@ -411,5 +411,58 @@ describe('Whiskers', () => {
     expect(svg).not.toContain('#4fb3ff')
     expect(svg).not.toContain('#a8977a')
     expect(tail(draw({ propeller: 1 }))).not.toBe(tail(draw()))
+  })
+})
+
+describe('Ollie', () => {
+  const draw = (pose: Partial<Pose> = {}, time = 0) =>
+    Ollie.body({ pose: { ...BASE_POSE, ...pose }, time, id: (n) => `o-${n}`, url: (n) => `url(#o-${n})`, h: (() => '') as never })
+  const part = (svg: string, name: string) => svg.match(new RegExp(`<[^>]*class="ollie-${name}"[^>]*>`))![0]
+  const glasses = (svg: string) => svg.match(/<g class="ollie-glasses".*?<\/g>/)![0]
+  const glassesY = (svg: string) => Number(glasses(svg).match(/<circle cx="[^"]+" cy="([^"]+)"/)![1])
+  const wings = (svg: string) => svg.match(/<g class="ollie-wing"[^>]*>/g)!.join('')
+
+  it('ships as a self-drawn owl', () => {
+    expect(characters.Ollie).toBe(Ollie)
+    expect(Ollie).toMatchObject({ id: 'ollie', name: 'Ollie', kind: 'night owl', skeleton: false })
+    const pet = make({ character: Ollie })
+    expect(pet.character).toBe(Ollie)
+    expect(pet.element.querySelector('.mwpet-body')!.getAttribute('aria-label')).toContain('Ollie')
+    expect(renderIcon(Ollie, { title: 'Ollie' })).toContain('aria-label="Ollie"')
+  })
+
+  it('draws a different look for every eye shape', () => {
+    const shapes: EyeShape[] = ['open', 'happy', 'closed', 'heart', 'x', 'squint', 'spiral', 'wide']
+    expect(new Set(shapes.map((eye) => draw({ eye }))).size).toBe(shapes.length)
+  })
+
+  it('talks, cries, tilts its head and waves', () => {
+    expect(draw({ mouthOpen: 1 })).not.toBe(draw({ mouthOpen: 0 }))
+    expect(draw({ tears: 1 })).toContain('#8fdcff')
+    expect(part(draw({ antenna: 20 }), 'head')).not.toBe(part(draw({ antenna: 0 }), 'head'))
+    expect(wings(draw({ armR: 140 }))).not.toBe(wings(draw()))
+    expect(draw({ legL: 8 })).not.toBe(draw())
+  })
+
+  it('slides its glasses down while busy and back up at rest', () => {
+    expect(glassesY(draw({ code: 1 }))).toBeGreaterThan(glassesY(draw()))
+    expect(glassesY(draw({ progress: 0.5 }))).toBeGreaterThan(glassesY(draw()))
+    expect(glasses(draw({ code: 0 }, 0.3))).toBe(glasses(draw({}, 4.1)))
+  })
+
+  it('tilts its head slowly at rest', () => {
+    expect(part(draw({}, 0.3), 'head')).not.toBe(part(draw({}, 2.5), 'head'))
+  })
+
+  it('ruffles its chest feathers only while busy', () => {
+    expect(part(draw({ code: 1 }, 0.3), 'chest')).not.toBe(part(draw({ code: 1 }, 0.6), 'chest'))
+    expect(part(draw({}, 0.3), 'chest')).toBe(part(draw({}, 0.6), 'chest'))
+  })
+
+  it('flaps without robot props', () => {
+    const svg = renderIcon(Ollie, { pose: { propeller: 3, flame: 1, keyboard: 1 } })
+    expect(svg).not.toContain('#4fb3ff')
+    expect(svg).not.toContain('#a8977a')
+    expect(wings(draw({ propeller: 1 }, 0.1))).not.toBe(wings(draw({ propeller: 1 }, 0.2)))
   })
 })

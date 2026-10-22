@@ -3,7 +3,7 @@
 Little animated pets for your apps: web apps, desktop apps (Electron, Tauri) and websites.
 
 <p align="center">
-  <img src="docs/characters.svg" alt="The built-in characters: Pixel, Rack, Biscuit and Whiskers" width="720">
+  <img src="docs/characters.svg" alt="The built-in characters: Pixel, Rack, Biscuit, Whiskers and Ollie" width="720">
 </p>
 
 It idles, blinks, flies around when you drag it, naps in a dock when you leave it alone, and chats

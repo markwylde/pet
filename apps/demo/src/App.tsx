@@ -1,4 +1,4 @@
-import { ANIMATION_GROUPS, Biscuit, Pixel, Rack, Whiskers, type AnimationName, type Character, type ChatOptions, type PetInstance } from '@markwylde/pet'
+import { ANIMATION_GROUPS, Biscuit, Ollie, Pixel, Rack, Whiskers, type AnimationName, type Character, type ChatOptions, type PetInstance } from '@markwylde/pet'
 import { Pet, PetIcon } from '@markwylde/pet/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { mockAssistant } from './chat/mockAssistant'
@@ -8,7 +8,7 @@ const STATUS_BAR_H = 44
 const HIDE_AFTER = 10_000
 const INSETS = { bottom: STATUS_BAR_H }
 
-const CHARACTERS: Record<string, Character> = { pixel: Pixel, rack: Rack, biscuit: Biscuit, whiskers: Whiskers }
+const CHARACTERS: Record<string, Character> = { pixel: Pixel, rack: Rack, biscuit: Biscuit, whiskers: Whiskers, ollie: Ollie }
 const isCharacterKey = (v: unknown): v is string => typeof v === 'string' && v in CHARACTERS
 
 const CHAT: ChatOptions = {
