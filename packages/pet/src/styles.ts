@@ -51,6 +51,7 @@ export const css = /* css */ `
 .mwpet *, .mwpet *::before, .mwpet *::after { box-sizing: border-box; }
 .mwpet[data-state='hidden'] { display: none; }
 .mwpet[data-state='hiding'], .mwpet[data-state='showing'] { pointer-events: none; }
+.mwpet[data-state='showing'] .mwpet-chat { pointer-events: auto; }
 
 .mwpet-body {
   width: 100%;

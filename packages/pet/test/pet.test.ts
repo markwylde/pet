@@ -193,6 +193,19 @@ describe('chat', () => {
     expect(balloon.dataset.align).toBeDefined()
   })
 
+  it('stands at full size where the pet will land while the pet flies in', async () => {
+    const pet = make({ hidden: true, position: { x: window.innerWidth - 200, y: 300 }, chat: { assistant: () => 'hi' } })
+    pet.chat.open()
+    await new Promise((r) => setTimeout(r, 60))
+    expect(pet.state).toBe('showing')
+    const balloon = pet.element.querySelector<HTMLElement>('.mwpet-chat')!
+    expect(balloon.hidden).toBe(false)
+    expect(balloon.dataset.side).toBe('left')
+    expect(pet.element.style.transform).not.toContain('scale')
+    expect(pet.element.style.opacity).toBe('1')
+    expect(pet.element.querySelector<HTMLElement>('.mwpet-body')!.style.transform).toContain('scale')
+  })
+
   it('hands sending to the host when onSend is set', async () => {
     const onSend = vi.fn()
     const onStop = vi.fn()
