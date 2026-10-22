@@ -352,7 +352,7 @@ export function createPet(options: PetOptions = {}): PetInstance {
     return new Promise((resolve) => {
       st.transition = resolve
       switchTo('show')
-      draw(0, 0) // place it before the first frame so it doesn't flash at home
+      draw(0, 0, false) // place it before the first frame so it doesn't flash at home
     })
   }
 
@@ -498,12 +498,22 @@ export function createPet(options: PetOptions = {}): PetInstance {
   body.addEventListener('keydown', onKeyDown)
 
   // ---------- frame loop ----------
-  const draw = (scale: number, opacity: number) => {
+  const draw = (scale: number, opacity: number, landing: boolean) => {
     const size = opt.size
     const feet = feetAt(size)
-    root.style.transform = `translate(${st.pos.x}px, ${st.pos.y}px) scale(${scale})`
-    root.style.transformOrigin = `${feet.x}px ${feet.y}px`
-    root.style.opacity = String(opacity)
+    if (landing) {
+      // the balloon already stands where the pet will land; only the pet flies in
+      root.style.transform = `translate(${st.home.x}px, ${st.home.y}px)`
+      root.style.opacity = '1'
+      body.style.transform = `translate(${st.pos.x - st.home.x}px, ${st.pos.y - st.home.y}px) scale(${scale})`
+      body.style.transformOrigin = `${feet.x}px ${feet.y}px`
+      body.style.opacity = String(opacity)
+    } else {
+      root.style.transform = `translate(${st.pos.x}px, ${st.pos.y}px) scale(${scale})`
+      root.style.transformOrigin = `${feet.x}px ${feet.y}px`
+      root.style.opacity = String(opacity)
+      body.style.transform = body.style.transformOrigin = body.style.opacity = ''
+    }
     if (!speech.hidden) {
       // nudge the bubble back on screen; its tail keeps pointing at the pet
       const centre = st.pos.x + (BOX.width * size) / 2
@@ -577,12 +587,16 @@ export function createPet(options: PetOptions = {}): PetInstance {
     }
 
     // --- keep pet + chat on screen ---
-    const att = st.state === 'shown' ? (chat?.attachment ?? null) : null
+    // a balloon opened mid-show is laid out at the landing spot straight away
+    const landing = st.state === 'showing' && !!chat?.isOpen
+    const att = st.state === 'shown' || landing ? (chat?.attachment ?? null) : null
     if (att && chat) {
+      const at = landing ? st.home : st.pos
       // only re-pick the side when the pet travels, never mid-resize
-      if (st.relayout || st.mode !== 'normal') st.placement = choosePlacement(st.pos, opt.size, att, st.placement, b, st.freshLayout)
+      if (st.relayout || st.mode !== 'normal') st.placement = choosePlacement(at, opt.size, att, st.placement, b, st.freshLayout)
       st.freshLayout = false
       chat.layout(st.placement, attachmentMax(opt.size, st.placement, b))
+      if (landing) st.home = clampWithAttachment(st.home, opt.size, att, st.placement, b)
     }
     st.relayout = false
     if (st.state === 'shown') {
@@ -675,7 +689,7 @@ export function createPet(options: PetOptions = {}): PetInstance {
     pose = lerpPose(st.from, pose, smooth(k))
     st.last = pose
 
-    draw(scale, opacity)
+    draw(scale, opacity, landing)
   }
 
   let raf = 0
@@ -804,7 +818,7 @@ export function createPet(options: PetOptions = {}): PetInstance {
   if (options.chat) setChat(options.chat)
   applyAttributes()
   ;(options.container ?? document.body).appendChild(root)
-  draw(1, 1)
+  draw(1, 1, false)
   raf = requestAnimationFrame(loop)
   return instance
 }
