@@ -1,6 +1,6 @@
 {
   "name": "@markwylde/pet",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Little animated pets for web apps, desktop apps and websites. Draggable, chatty, zero dependencies.",
   "keywords": [
     "pet",
