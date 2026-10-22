@@ -5,7 +5,7 @@ and plain websites. Drop one in: it idles, blinks, flies around when you drag it
 you leave it alone, and chats with you through any AI backend you plug in.
 
 - **Zero dependencies.** Plain DOM + SVG, works with any framework (or none). Optional React bindings.
-- **Characters.** Ships with **Pixel** (a beige CRT terminal), **Rack** (a home server with an LED face), **Biscuit** (a cartoon dog) and **Whiskers** (a ginger cartoon cat). Define your own.
+- **Characters.** Ships with **Pixel** (a beige CRT terminal), **Rack** (a home server with an LED face), **Biscuit** (a cartoon dog), **Whiskers** (a ginger cartoon cat) and **Ollie** (a night owl in reading glasses). Define your own.
 - **17 animations** (idle, happy, sad, busy, flying, talking…) that blend smoothly into each other, plus your own.
 - **Promise-based actions.** `await pet.moveTo('center'); await pet.play('happy'); await pet.say('Hi!')`
 - **Chat balloon** with streaming replies: the pet thinks, then talks while the text arrives.
@@ -45,7 +45,7 @@ The package is ESM-only and runs in the browser. React is an optional peer depen
 import Pet, { Rack } from '@markwylde/pet'
 
 const pet = Pet({
-  character: Rack, // or Whiskers, or Pixel (the default)
+  character: Rack, // or Whiskers, Ollie, or Pixel (the default)
   size: 1, // 1 = 180 × 220 px
   position: 'bottom-right',
 })
@@ -328,7 +328,7 @@ so draw a head around them.
 (screen, arms, legs, antenna, propeller, flames, keyboard). Your `body` function draws the
 whole figure from the pose: `pose.armL`/`armR` are arm angles, `legL`/`legR` are foot lifts,
 `pose.eye` and `pose.mouthOpen` drive the face, and so on (see [the pose](#the-pose)). Body motion, the
-shadow and the effects above the head (hearts, zzz, rain cloud) still apply. Whiskers is
+shadow and the effects above the head (hearts, zzz, rain cloud) still apply. Whiskers and Ollie are
 built this way.
 
 ```ts
@@ -444,7 +444,7 @@ is `{ id, label, kind?: 'default' | 'primary' | 'danger' }`.
 
 | Export                  | Description                                                                      |
 | ----------------------- | -------------------------------------------------------------------------------- |
-| `Pixel`, `Rack`, `Biscuit`, `Whiskers`, `characters` | Built-in characters.                               |
+| `Pixel`, `Rack`, `Biscuit`, `Whiskers`, `Ollie`, `characters` | Built-in characters.                      |
 | `defineCharacter(input)`| Create a character with defaults filled in.                                      |
 | `renderIcon(character, { pose?, viewBox?, title? })` | A static `<svg>` string of a character.             |
 | `STAGE_VIEWBOX`         | The viewBox the live pet uses, with room above for effects. Pass it to `renderIcon` to include hearts, clouds etc. |

@@ -16,7 +16,7 @@ export { createPet }
 export const Pet = createPet
 export default createPet
 
-export { Biscuit, Pixel, Rack, Whiskers, characters, defineCharacter } from './characters/index.js'
+export { Biscuit, Ollie, Pixel, Rack, Whiskers, characters, defineCharacter } from './characters/index.js'
 export type { Anchor, BodyContext, Character, CharacterInput, LimbContext } from './characters/index.js'
 
 export { ANIMATIONS, ANIMATION_GROUPS, motion } from './animations.js'
